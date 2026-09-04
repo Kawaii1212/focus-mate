@@ -1,0 +1,124 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                 String         @id @default(uuid())
+  name               String
+  email              String         @unique
+  passwordHash       String
+  onboardingComplete Boolean        @default(false)
+  studyHabit         String
+  goal               String
+  preferredTime      String
+  createdAt          DateTime       @default(now())
+
+  mascot             Mascot?
+  sessions           StudySession[]
+  deadlines          Deadline[]
+  fixedBlocks        FixedBlock[]
+  plannerBlocks      PlannerBlock[]
+}
+
+model Mascot {
+  id             String @id @default(uuid())
+  userId         String @unique
+  personaId      String
+  stage          String @default("baby")
+  level          Int    @default(1)
+  exp            Int    @default(0)
+  expToNextLevel Int    @default(100)
+  coin           Int    @default(50)
+  energy         Int    @default(100)
+  streakShields  Int    @default(1)
+  name           String
+
+  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model StudySession {
+  id             String  @id @default(uuid())
+  userId         String
+  taskTitle      String
+  targetMinutes  Int
+  actualMinutes  Int
+  completionPct  Int
+  expEarned      Int
+  coinEarned     Int
+  isValid        Boolean @default(false)
+  streakSaved    Boolean @default(false)
+  plannerBlockId String?
+  date           String
+  createdAt      String
+
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PlannerBlock {
+  id                String   @id @default(uuid())
+  userId            String
+  title             String
+  date              DateTime
+  startTime         String
+  endTime           String
+  type              String
+  relatedDeadlineId String?
+  status            String   @default("pending")
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Deadline {
+  id             String   @id @default(uuid())
+  userId         String
+  title          String
+  date           DateTime
+  importance     String   @default("medium")
+  isCompleted    Boolean  @default(false)
+  estimatedHours Int?
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FixedBlock {
+  id             String   @id @default(uuid())
+  userId         String
+  title          String
+  dayOfWeek      Int
+  startTime      String
+  endTime        String
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ActiveRoom {
+  id                     String @id @default(uuid())
+  name                   String
+  hostId                 String
+  maxMembers             Int    @default(4)
+  checkInIntervalMinutes Int    @default(30)
+  sharedMinutes          Int    @default(0)
+  
+  pomodoroTimeLeft       Int    @default(1500)
+  pomodoroIsActive       Boolean @default(false)
+  pomodoroMode           String @default("focus")
+
+  members                RoomMember[]
+}
+
+model RoomMember {
+  id              String @id
+  roomId          String
+  name            String
+  mascotPersonaId String
+  status          String @default("focusing")
+  lastCheckIn     DateTime @default(now())
+
+  room            ActiveRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
