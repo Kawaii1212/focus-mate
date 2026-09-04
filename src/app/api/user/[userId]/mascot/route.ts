@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-export async function POST(request: Request, { params }: { params: { userId: string } }) {
+export async function POST(request: Request, context: { params: Promise<{ userId: string }> }) {
+  const { userId } = await context.params;
   try {
-    const { userId } = params;
     const body = await request.json();
     const { personaId, stage, level, exp, expToNextLevel, coin, energy, streakShields, name } = body;
 

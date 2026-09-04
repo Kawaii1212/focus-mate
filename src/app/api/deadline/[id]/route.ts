@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
 // In api.ts, GET is called with userId: fetch(`/api/deadline/${userId}`)
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   try {
-    const userId = params.id;
     const deadlines = await prisma.deadline.findMany({
-      where: { userId }
+      where: { userId: id }
     });
     return NextResponse.json(deadlines);
   } catch (error) {
@@ -16,14 +16,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
 }
 
 // In api.ts, PUT is called with deadlineId: fetch(`/api/deadline/${id}`)
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   try {
-    const deadlineId = params.id;
     const body = await request.json();
     const { title, date, importance, isCompleted, estimatedHours } = body;
 
     const updatedDeadline = await prisma.deadline.update({
-      where: { id: deadlineId },
+      where: { id: id },
       data: {
         title,
         date: date ? new Date(date) : undefined,
@@ -40,11 +40,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   try {
-    const deadlineId = params.id;
     await prisma.deadline.delete({
-      where: { id: deadlineId }
+      where: { id: id }
     });
     return new NextResponse(null, { status: 204 });
   } catch (error) {

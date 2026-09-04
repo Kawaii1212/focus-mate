@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
 // In api.ts, GET is called with userId: fetch(`/api/plannerblock/${userId}`)
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   try {
-    const userId = params.id;
     const blocks = await prisma.plannerBlock.findMany({
-      where: { userId }
+      where: { userId: id }
     });
     return NextResponse.json(blocks);
   } catch (error) {
@@ -16,14 +16,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
 }
 
 // In api.ts, PUT is called with blockId: fetch(`/api/plannerblock/${id}`)
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   try {
-    const blockId = params.id;
     const body = await request.json();
     const { title, date, startTime, endTime, type, relatedDeadlineId, status } = body;
 
     const updatedBlock = await prisma.plannerBlock.update({
-      where: { id: blockId },
+      where: { id: id },
       data: {
         title,
         date: date ? new Date(date) : undefined,
@@ -42,11 +42,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   try {
-    const blockId = params.id;
     await prisma.plannerBlock.delete({
-      where: { id: blockId }
+      where: { id: id }
     });
     return new NextResponse(null, { status: 204 });
   } catch (error) {

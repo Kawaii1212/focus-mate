@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-export async function GET(request: Request, { params }: { params: { userId: string } }) {
+export async function GET(request: Request, context: { params: Promise<{ userId: string }> }) {
+  const { userId } = await context.params;
   try {
-    const { userId } = params;
     const sessions = await prisma.studySession.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' }
