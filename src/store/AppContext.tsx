@@ -105,8 +105,14 @@ function reducer(state: AppState, action: Action): AppState {
     }
     case 'LOGOUT':
       return { ...state, user: null, mascot: null };
-    case 'SET_USER':
+    case 'SET_USER': {
+      const payload = action.payload as User & { mascot?: any };
+      if (payload.mascot) {
+        const { mascot, ...user } = payload;
+        return { ...state, user: user as User, mascot };
+      }
       return { ...state, user: action.payload };
+    }
 
     case 'COMPLETE_ONBOARDING': {
       const persona = PERSONAS[action.payload.personaId];
