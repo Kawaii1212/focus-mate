@@ -19,6 +19,10 @@ export async function GET(request: Request, context: { params: Promise<{ userId:
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
+    if (user.mascot) {
+      (user.mascot as any).personaId = parseInt(user.mascot.personaId);
+    }
+
     return NextResponse.json(user);
   } catch (error) {
     console.error("Error fetching user:", error);
@@ -36,6 +40,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ userI
       data: body,
       include: { mascot: true }
     });
+
+    if (updatedUser.mascot) {
+      (updatedUser.mascot as any).personaId = parseInt(updatedUser.mascot.personaId);
+    }
 
     return NextResponse.json(updatedUser);
   } catch (error) {

@@ -16,6 +16,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
     }
 
+    if (user.mascot) {
+      (user.mascot as any).personaId = parseInt(user.mascot.personaId);
+    }
+
     return NextResponse.json(user);
   } catch (error) {
     console.error("Login error:", error);

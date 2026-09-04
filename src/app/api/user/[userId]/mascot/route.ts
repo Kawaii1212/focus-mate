@@ -10,7 +10,7 @@ export async function POST(request: Request, context: { params: Promise<{ userId
     const mascot = await prisma.mascot.upsert({
       where: { userId },
       update: {
-        personaId,
+        personaId: personaId.toString(),
         stage,
         level,
         exp,
@@ -22,7 +22,7 @@ export async function POST(request: Request, context: { params: Promise<{ userId
       },
       create: {
         userId,
-        personaId,
+        personaId: personaId.toString(),
         stage: stage || 'baby',
         level: level || 1,
         exp: exp || 0,
@@ -34,6 +34,7 @@ export async function POST(request: Request, context: { params: Promise<{ userId
       }
     });
 
+    (mascot as any).personaId = parseInt(mascot.personaId);
     return NextResponse.json(mascot);
   } catch (error) {
     console.error("Error updating mascot:", error);
