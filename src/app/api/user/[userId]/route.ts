@@ -25,3 +25,21 @@ export async function GET(request: Request, context: { params: Promise<{ userId:
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function PATCH(request: Request, context: { params: Promise<{ userId: string }> }) {
+  try {
+    const { userId } = await context.params;
+    const body = await request.json();
+    
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: body,
+      include: { mascot: true }
+    });
+
+    return NextResponse.json(updatedUser);
+  } catch (error) {
+    console.error("Error updating user:", error);
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+  }
+}

@@ -69,17 +69,48 @@ export default function OnboardingFlow() {
     if (prev) setStep(prev);
   };
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     if (selectedEgg === null) return;
     const persona = PERSONAS[selectedEgg];
+    const finalMascotName = mascotName.trim() || persona.defaultMascotName;
+
+    // Dispatch locally first for instant UI response
     dispatch({
       type: 'COMPLETE_ONBOARDING',
       payload: {
         personaId: selectedEgg,
-        mascotName: mascotName.trim() || persona.defaultMascotName,
+        mascotName: finalMascotName,
         role: role,
       },
     });
+
+    // Save to backend if logged in
+    const stateStr = localStorage.getItem('focusmate_state');
+    if (stateStr) {
+      try {
+        const stateObj = JSON.parse(stateStr);
+        if (stateObj.user && stateObj.user.id) {
+          const { userApi } = await import('@/lib/api');
+          await userApi.updateUser(stateObj.user.id, {
+            onboardingComplete: true
+          });
+          await userApi.updateMascot(stateObj.user.id, {
+            personaId: selectedEgg,
+            name: finalMascotName,
+            stage: 'baby',
+            level: 1,
+            exp: 0,
+            expToNextLevel: 100,
+            coin: 50,
+            energy: 100,
+            streakShields: 1
+          });
+        }
+      } catch (err) {
+        console.error("Failed to save onboarding to backend", err);
+      }
+    }
+
     router.push('/dashboard');
   };
 

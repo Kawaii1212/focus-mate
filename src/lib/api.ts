@@ -29,6 +29,27 @@ export const authApi = {
     }
 };
 
+export const userApi = {
+    updateUser: async (userId: string, data: Record<string, unknown>): Promise<User> => {
+        const response = await fetch(`${API_URL}/api/user/${userId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error();
+        return await response.json();
+    },
+    updateMascot: async (userId: string, data: Record<string, unknown>): Promise<any> => {
+        const response = await fetch(`${API_URL}/api/user/${userId}/mascot`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) throw new Error();
+        return await response.json();
+    }
+};
+
 export const deadlineApi = {
     getDeadlines: async (userId: string): Promise<Deadline[]> => {
         try {
