@@ -47,6 +47,8 @@ const initialState: AppState = {
   },
   isDarkMode: false,
   ownedItems: [],
+  isPremium: false,
+  premiumExpiry: null,
 };
 
 function loadState(): AppState {
@@ -80,7 +82,8 @@ type Action =
   | { type: 'COMPLETE_PLANNER_BLOCK'; payload: string }
   | { type: 'BUY_ITEM'; payload: { itemId: string; price: number } }
   | { type: 'USE_STREAK_SHIELD' }
-  | { type: 'ADD_STREAK_SHIELD'; payload: number };
+  | { type: 'ADD_STREAK_SHIELD'; payload: number }
+  | { type: 'SET_PREMIUM'; payload: { isPremium: boolean; premiumExpiry: string | null } };
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -93,6 +96,8 @@ function reducer(state: AppState, action: Action): AppState {
         studyHabit: action.payload.studyHabit,
         goal: action.payload.goal,
         preferredTime: action.payload.preferredTime,
+        isPremium: false,
+        premiumExpiry: null,
         createdAt: new Date().toISOString(),
       };
       return { ...state, user };
@@ -107,11 +112,13 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, user: null, mascot: null };
     case 'SET_USER': {
       const payload = action.payload as User & { mascot?: any };
+      const isPremium = 'isPremium' in payload ? !!payload.isPremium : state.isPremium;
+      const premiumExpiry = 'premiumExpiry' in payload ? (payload as any).premiumExpiry : state.premiumExpiry;
       if (payload.mascot) {
         const { mascot, ...user } = payload;
-        return { ...state, user: user as User, mascot };
+        return { ...state, user: user as User, mascot, isPremium, premiumExpiry };
       }
-      return { ...state, user: action.payload };
+      return { ...state, user: action.payload, isPremium, premiumExpiry };
     }
 
     case 'COMPLETE_ONBOARDING': {
@@ -259,6 +266,15 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         mascot: { ...state.mascot, coin: state.mascot.coin - action.payload.price },
         ownedItems: [...state.ownedItems, action.payload.itemId],
+      };
+    }
+
+    case 'SET_PREMIUM': {
+      return {
+        ...state,
+        isPremium: action.payload.isPremium,
+        premiumExpiry: action.payload.premiumExpiry,
+        user: state.user ? { ...state.user, isPremium: action.payload.isPremium } : state.user,
       };
     }
 

@@ -1,4 +1,4 @@
-import { Deadline, PlannerBlock, User, StudySession } from '../types';
+import { Deadline, PlannerBlock, User, StudySession, PremiumPlan } from '../types';
 
 const API_URL = ""; // Relative path for Next.js API routes
 
@@ -159,4 +159,31 @@ export const sessionApi = {
             return { ...session, id: Math.random().toString() };
         }
     }
+};
+
+export const paymentApi = {
+    createPayment: async (userId: string, planId: PremiumPlan): Promise<{
+        paymentId: string;
+        orderCode: number;
+        checkoutUrl: string;
+        qrCode: string;
+        amount: number;
+        description: string;
+    }> => {
+        const response = await fetch(`${API_URL}/api/payment/create`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, planId }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to create payment');
+        }
+        return await response.json();
+    },
+    getPremiumStatus: async (userId: string): Promise<{ isPremium: boolean; premiumExpiry: string | null }> => {
+        const response = await fetch(`${API_URL}/api/payment/status?userId=${userId}`);
+        if (!response.ok) throw new Error();
+        return await response.json();
+    },
 };

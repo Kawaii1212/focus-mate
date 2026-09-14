@@ -17,6 +17,8 @@ model User {
   studyHabit         String
   goal               String
   preferredTime      String
+  isPremium          Boolean        @default(false)
+  premiumExpiry      DateTime?
   createdAt          DateTime       @default(now())
 
   mascot             Mascot?
@@ -24,6 +26,7 @@ model User {
   deadlines          Deadline[]
   fixedBlocks        FixedBlock[]
   plannerBlocks      PlannerBlock[]
+  payments           Payment[]
 }
 
 model Mascot {
@@ -121,4 +124,19 @@ model RoomMember {
   lastCheckIn     DateTime @default(now())
 
   room            ActiveRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id                String   @id @default(uuid())
+  orderCode         Int      @unique
+  userId            String
+  planId            String
+  amount            Int
+  status            String   @default("pending")
+  payosTransactionId String?
+  paymentLink       String?
+  createdAt         DateTime @default(now())
+  paidAt            DateTime?
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
