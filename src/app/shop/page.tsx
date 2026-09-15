@@ -39,6 +39,11 @@ export default function ShopPage() {
 
   const handleBuy = (item: typeof SHOP_ITEMS[0]) => {
     if (!mascot) return;
+    const isUnlocked = !item.isPremium || state.isPremium;
+    if (!isUnlocked) {
+      toast({ title: 'Cần Premium!', description: 'Nâng cấp Premium để mở khóa item này.', variant: 'destructive' });
+      return;
+    }
     if (mascot.coin < item.price) {
       toast({ title: 'Không đủ coin!', description: `Bạn cần thêm ${item.price - mascot.coin} coin.`, variant: 'destructive' });
       return;
@@ -109,6 +114,7 @@ export default function ShopPage() {
             <div className="grid grid-cols-4 gap-4">
               {filteredItems.map((item) => {
                 const owned = state.ownedItems.includes(item.id);
+                const isUnlocked = !item.isPremium || state.isPremium;
                 const canAfford = (mascot?.coin ?? 0) >= item.price;
                 const isRequesting = requestingItem === item.id;
 
@@ -124,9 +130,14 @@ export default function ShopPage() {
                         className="h-28 flex items-center justify-center relative"
                         style={{ background: item.isPremium ? 'hsl(var(--lavender))' : 'hsl(var(--secondary))' }}
                       >
-                        {item.isPremium && (
+                        {item.isPremium && !state.isPremium && (
                           <Badge className="absolute top-2 right-2 text-xs" style={{ background: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))' }}>
                             Premium
+                          </Badge>
+                        )}
+                        {item.isPremium && state.isPremium && (
+                          <Badge className="absolute top-2 right-2 text-xs" style={{ background: 'hsl(var(--sky))', color: 'white' }}>
+                            VIP
                           </Badge>
                         )}
                         {owned && (
@@ -154,7 +165,7 @@ export default function ShopPage() {
 
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1">
-                            {item.isPremium ? (
+                            {!isUnlocked ? (
                               <Lock className="w-3.5 h-3.5 text-muted-foreground" />
                             ) : (
                               <Zap className="w-3.5 h-3.5" style={{ color: 'hsl(var(--butter))' }} />
@@ -162,7 +173,7 @@ export default function ShopPage() {
                             <span className="text-sm font-bold text-foreground">{item.price}</span>
                           </div>
 
-                          {!owned && !item.isPremium && (
+                          {!owned && isUnlocked && !item.isPremium && (
                             <button
                               onClick={() => handleMascotRequest(item.id)}
                               className="text-xs text-muted-foreground hover:text-foreground flex items-center"
@@ -177,18 +188,18 @@ export default function ShopPage() {
                           size="sm"
                           className="w-full rounded-xl text-xs"
                           onClick={() => handleBuy(item)}
-                          disabled={item.isPremium || owned}
+                          disabled={owned || !isUnlocked}
                           style={
                             owned
                               ? { background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }
-                              : item.isPremium
+                              : !isUnlocked
                               ? {}
                               : !canAfford
                               ? { background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' }
                               : { background: 'hsl(var(--sky))', color: 'white' }
                           }
                         >
-                          {owned ? 'Đã có' : item.isPremium ? <><Lock className="w-3 h-3 mr-1 inline" /> Premium</> : !canAfford ? 'Thiếu coin' : 'Mua'}
+                          {owned ? 'Đã có' : !isUnlocked ? <><Lock className="w-3 h-3 mr-1 inline" /> Premium</> : !canAfford ? 'Thiếu coin' : 'Mua'}
                         </Button>
                       </div>
                     </CardContent>

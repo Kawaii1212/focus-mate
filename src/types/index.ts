@@ -21,6 +21,8 @@ export interface User {
   goal: string;           // from onboarding
   preferredTime: 'morning' | 'afternoon' | 'evening' | 'night'; // from onboarding
   role?: string;          // from onboarding
+  isPremium: boolean;
+  premiumExpiry: string | null;
   createdAt: string;
 }
 
@@ -150,6 +152,21 @@ export interface ShopItem {
   owned: boolean;
 }
 
+export interface Payment {
+  id: string;
+  orderCode: number;
+  userId: string;
+  planId: string;
+  amount: number;
+  status: 'pending' | 'paid' | 'failed';
+  payosTransactionId: string | null;
+  paymentLink: string | null;
+  createdAt: string;
+  paidAt: string | null;
+}
+
+export type PremiumPlan = 'monthly' | 'yearly';
+
 // ============ App State ============
 
 export interface AppState {
@@ -164,6 +181,8 @@ export interface AppState {
   plannerState: PlannerState;
   isDarkMode: boolean;
   ownedItems: string[];
+  isPremium: boolean;
+  premiumExpiry: string | null;
 }
 
 // ============ Active Timer State ============
