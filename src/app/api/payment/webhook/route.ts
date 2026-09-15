@@ -6,6 +6,7 @@ import { PLAN_CONFIG } from '@/lib/payos';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    console.log('Webhook received:', JSON.stringify(body).substring(0, 500));
 
     if (!body || !body.data) {
       return NextResponse.json({ message: 'OK' }, { status: 200 });
@@ -14,8 +15,9 @@ export async function POST(request: Request) {
     let verifiedData: any;
     try {
       verifiedData = await verifyWebhookPayload(body);
-    } catch {
-      return NextResponse.json({ message: 'OK' }, { status: 200 });
+    } catch (err) {
+      console.error('Webhook verification failed:', err);
+      return NextResponse.json({ message: 'Verification failed' }, { status: 400 });
     }
 
     if (verifiedData.code !== '00' || !verifiedData.success) {

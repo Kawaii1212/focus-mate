@@ -40,15 +40,23 @@ function PremiumContent() {
     const orderCode = searchParams?.get('orderCode');
 
     if (paymentStatus === 'success' && orderCode && state.user) {
-      try {
-        const status = await paymentApi.getPremiumStatus(state.user.id);
-        if (status.isPremium) {
-          dispatch({ type: 'SET_PREMIUM', payload: { isPremium: true, premiumExpiry: status.premiumExpiry } });
-          toast({ title: 'Nâng cấp thành công!', description: 'Bạn đã là thành viên Premium.' });
+      // Poll for webhook processing — retry up to 5 times with increasing delay
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          const status = await paymentApi.getPremiumStatus(state.user.id);
+          if (status.isPremium) {
+            dispatch({ type: 'SET_PREMIUM', payload: { isPremium: true, premiumExpiry: status.premiumExpiry } });
+            toast({ title: 'Nâng cấp thành công!', description: 'Bạn đã là thành viên Premium.' });
+            return;
+          }
+        } catch {
+          // ignore
         }
-      } catch {
-        toast({ title: 'Lỗi xác nhận', description: 'Vui lòng liên hệ hỗ trợ nếu tiền đã bị trừ.', variant: 'destructive' });
+        // Wait before retrying: 1s, 2s, 3s, 4s
+        await new Promise(resolve => setTimeout(resolve, (attempt + 1) * 1000));
       }
+      // All retries exhausted
+      toast({ title: 'Chưa nhận được thanh toán', description: 'Vui lòng đợi vài phút và kiểm tra lại. Nếu tiền đã bị trừ, liên hệ hỗ trợ.', variant: 'destructive' });
     }
 
     if (paymentStatus === 'cancelled') {
@@ -59,6 +67,17 @@ function PremiumContent() {
   useEffect(() => {
     handlePaymentReturn();
   }, [handlePaymentReturn]);
+
+  // Sync premium status from DB on mount (in case webhook already processed)
+  useEffect(() => {
+    if (state.user && !state.isPremium) {
+      paymentApi.getPremiumStatus(state.user.id).then((status) => {
+        if (status.isPremium) {
+          dispatch({ type: 'SET_PREMIUM', payload: { isPremium: true, premiumExpiry: status.premiumExpiry } });
+        }
+      }).catch(() => {});
+    }
+  }, [state.user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleUpgrade = async () => {
     if (!state.user) {

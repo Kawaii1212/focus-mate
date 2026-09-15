@@ -366,6 +366,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Sync premium status from DB on mount
+  useEffect(() => {
+    if (state.user && !state.isPremium) {
+      fetch(`/api/payment/status?userId=${state.user.id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.isPremium) {
+            dispatch({ type: 'SET_PREMIUM', payload: { isPremium: true, premiumExpiry: data.premiumExpiry } });
+          }
+        })
+        .catch(() => {});
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }
 
