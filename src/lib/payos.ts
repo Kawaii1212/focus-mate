@@ -31,7 +31,7 @@ export async function createPaymentLink(params: {
   const { planId } = params;
   const config = PLAN_CONFIG[planId];
   const orderCode = generateOrderCode();
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const appUrl = 'https://focus-mate-bh1s.vercel.app';
 
   const description = `FocusMate ${config.label}`;
 
