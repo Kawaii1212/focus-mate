@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { createPaymentLink } from '@/lib/payos';
 import type { PremiumPlan } from '@/types';
 
-const VALID_PLANS: PremiumPlan[] = ['vip', 'monthly', 'yearly'];
+const VALID_PLANS: PremiumPlan[] = ['monthly', 'yearly'];
 
 export async function POST(request: Request) {
   try {

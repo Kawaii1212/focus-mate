@@ -165,7 +165,7 @@ export interface Payment {
   paidAt: string | null;
 }
 
-export type PremiumPlan = 'vip' | 'monthly' | 'yearly';
+export type PremiumPlan = 'monthly' | 'yearly';
 
 // ============ App State ============
 

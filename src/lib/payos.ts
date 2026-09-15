@@ -16,7 +16,6 @@ function getPayOS(): PayOS {
 }
 
 export const PLAN_CONFIG: Record<PremiumPlan, { amount: number; label: string; durationDays: number | null }> = {
-  vip: { amount: 39000, label: 'Combo VIP', durationDays: null },
   monthly: { amount: 49000, label: 'Hàng tháng', durationDays: 30 },
   yearly: { amount: 399000, label: 'Hàng năm', durationDays: 365 },
 };

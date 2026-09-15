@@ -22,7 +22,6 @@ const BENEFITS = [
 ];
 
 const PLANS: { id: PremiumPlan; label: string; price: string; period: string; badge: string | null }[] = [
-  { id: 'vip', label: 'Combo VIP', price: '39.000đ', period: '/trọn đời', badge: 'Bán chạy' },
   { id: 'monthly', label: 'Hàng tháng', price: '49.000đ', period: '/tháng', badge: null },
   { id: 'yearly', label: 'Hàng năm', price: '399.000đ', period: '/năm', badge: 'Tiết kiệm 32%' },
 ];
@@ -32,7 +31,7 @@ function PremiumContent() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
 
-  const [selectedPlan, setSelectedPlan] = useState<PremiumPlan>('vip');
+  const [selectedPlan, setSelectedPlan] = useState<PremiumPlan>('monthly');
   const [loading, setLoading] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
 
