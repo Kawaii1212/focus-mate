@@ -4,15 +4,21 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp, useMascot } from '@/store/AppContext';
 import { PERSONAS, getRandomSpeech, CERTIFICATE_MILESTONES, getMascotStage } from '@/lib/mascotData';
+import { userApi } from '@/lib/api';
 import AppLayout from '@/components/layout/AppLayout';
 import MascotSVG from '@/components/mascot/MascotSVG';
+import MascotEgg from '@/components/mascot/MascotEgg';
 import SpeechBubble from '@/components/mascot/SpeechBubble';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { MascotState } from '@/types';
-import { Star, Flame, Zap, Shield, Heart, Trophy } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { MascotState, MascotPersonaId } from '@/types';
+import { Star, Flame, Zap, Shield, Heart, Trophy, RefreshCw } from 'lucide-react';
 
 const STATES: { value: MascotState; label: string }[] = [
   { value: 'idle', label: 'Bình thường' },
@@ -27,8 +33,13 @@ const STATES: { value: MascotState; label: string }[] = [
 export default function MascotRoomPage() {
   const router = useRouter();
   const mascot = useMascot();
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
+  const { toast } = useToast();
   const [currentState, setCurrentState] = useState<MascotState>('idle');
+  const [showChangeDialog, setShowChangeDialog] = useState(false);
+  const [selectedPersona, setSelectedPersona] = useState<MascotPersonaId | null>(null);
+  const [newMascotName, setNewMascotName] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!mascot) {
@@ -44,6 +55,35 @@ export default function MascotRoomPage() {
 
   const totalStudyMinutes = state.sessions.reduce((sum, s) => sum + s.actualMinutes, 0);
   const unlockedCerts = CERTIFICATE_MILESTONES.filter((c) => c.level <= mascot.level);
+
+  const handleChangePersona = async () => {
+    if (selectedPersona === null || !state.user) return;
+    setSaving(true);
+    try {
+      const newPersona = PERSONAS[selectedPersona];
+      const name = newMascotName.trim() || newPersona.defaultMascotName;
+      dispatch({ type: 'CHANGE_PERSONA', payload: { personaId: selectedPersona, name } });
+      await userApi.updateMascot(state.user.id, {
+        personaId: selectedPersona,
+        stage: mascot.stage,
+        level: mascot.level,
+        exp: mascot.exp,
+        expToNextLevel: mascot.expToNextLevel,
+        coin: mascot.coin,
+        energy: mascot.energy,
+        streakShields: mascot.streakShields,
+        name,
+      });
+      toast({ title: 'Thay đổi thành công!', description: `${newPersona.name} đã trở thành mascot mới của bạn.` });
+      setShowChangeDialog(false);
+      setSelectedPersona(null);
+      setNewMascotName('');
+    } catch (err) {
+      toast({ title: 'Lỗi', description: 'Không thể thay đổi mascot. Vui lòng thử lại.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const stageProgresses = [
     { label: 'Baby', range: 'Cấp 1–9', unlocked: true },
@@ -193,7 +233,7 @@ export default function MascotRoomPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Tính cách</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
+              <CardContent className="space-y-3">
                 <div
                   className="w-6 h-6 rounded-full"
                   style={{ background: persona.colors.primary }}
@@ -206,6 +246,15 @@ export default function MascotRoomPage() {
                 >
                   "{persona.speeches.idle[0]}"
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-2 rounded-xl"
+                  onClick={() => { setShowChangeDialog(true); setSelectedPersona(null); setNewMascotName(''); }}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Thay đổi Mascot
+                </Button>
               </CardContent>
             </Card>
 
@@ -247,6 +296,62 @@ export default function MascotRoomPage() {
           </div>
         </div>
       </div>
+
+      {/* Change Mascot Dialog */}
+      <Dialog open={showChangeDialog} onOpenChange={setShowChangeDialog}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Thay đổi Mascot</DialogTitle>
+            <DialogDescription>
+              Chọn người bạn đồng hành mới. Mascot hiện tại sẽ được thay thế.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-3 py-4">
+            {(PERSONAS.map((_, i) => i) as MascotPersonaId[]).map((id) => (
+              <MascotEgg
+                key={id}
+                personaId={id}
+                selected={selectedPersona === id}
+                locked={!!PERSONAS[id].isPremium && !state.isPremium}
+                onClick={() => {
+                  if (PERSONAS[id].isPremium && !state.isPremium) return;
+                  setSelectedPersona(id);
+                  setNewMascotName('');
+                }}
+                size={90}
+              />
+            ))}
+          </div>
+          {selectedPersona !== null && (
+            <div className="space-y-3 animate-fade-in">
+              <div
+                className="p-3 rounded-xl text-sm text-center"
+                style={{ background: 'hsl(var(--secondary))' }}
+              >
+                <p className="font-medium text-foreground">{PERSONAS[selectedPersona].name}</p>
+                <p className="text-muted-foreground mt-1">{PERSONAS[selectedPersona].description}</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="newMascotName">Đặt tên mới (tùy chọn)</Label>
+                <Input
+                  id="newMascotName"
+                  placeholder={PERSONAS[selectedPersona].defaultMascotName}
+                  value={newMascotName}
+                  onChange={(e) => setNewMascotName(e.target.value)}
+                  className="rounded-xl text-center"
+                />
+              </div>
+              <Button
+                className="w-full rounded-xl"
+                onClick={handleChangePersona}
+                disabled={saving}
+              >
+                {saving ? 'Đang lưu...' : 'Xác nhận thay đổi'}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }

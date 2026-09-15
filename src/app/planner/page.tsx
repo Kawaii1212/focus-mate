@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/store/AppContext';
+import { useToast } from '@/hooks/use-toast';
 import { runPlannerEngine, computeUrgencyScore, getMonday, isoDate } from '@/lib/plannerEngine';
 import { deadlineApi, plannerApi } from '@/lib/api';
 import { Deadline, FixedBlock, PlannerBlock, UserPlannerPrefs } from '@/types';
@@ -41,6 +42,7 @@ const TASK_COLORS = [
 
 export default function PlannerPage() {
   const { state: appState, dispatch } = useApp();
+  const { toast } = useToast();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [generating, setGenerating] = useState(false);
@@ -95,6 +97,10 @@ export default function PlannerPage() {
 
   const handleAddDeadline = async () => {
     if (!dlForm.taskName || !dlForm.dueDate || !dlForm.estimatedHours || !appState.user) return;
+    if (!appState.isPremium && appState.plannerState.deadlines.length >= 3) {
+      toast({ title: 'Giới hạn!', description: 'Bạn đã đạt 3 deadline cho tài khoản miễn phí. Nâng cấp Premium để thêm unlimited deadline!', variant: 'destructive' });
+      return;
+    }
     try {
       const dl: Deadline = {
         id: '', // Backend will generate

@@ -7,6 +7,7 @@ export interface PersonaData {
   description: string;
   eggDescription: string;
   imagePath: string;
+  isPremium?: boolean;
   colors: {
     primary: string;
     secondary: string;
@@ -233,6 +234,7 @@ export const PERSONAS: PersonaData[] = [
     description: 'Thẳng thắn, quyết đoán, nhưng luôn có điểm hài hước không ngờ tới.',
     eggDescription: 'Quả trứng đỏ cam rực lửa, với những vết nứt nhỏ đầy năng lượng.',
     imagePath: '/mascots/bear.jpg',
+    isPremium: true,
     colors: {
       primary: '#f87171',
       secondary: '#fee2e2',
@@ -285,6 +287,7 @@ export const PERSONAS: PersonaData[] = [
     description: 'Tự tin đến mức không thể ngờ, nhưng thực ra rất quan tâm đến bạn.',
     eggDescription: 'Quả trứng vàng óng ánh, toát ra khí chất CEO từ trong ra ngoài.',
     imagePath: '/mascots/capybara.jpg',
+    isPremium: true,
     colors: {
       primary: '#fbbf24',
       secondary: '#1e1b4b',

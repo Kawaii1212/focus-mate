@@ -51,7 +51,7 @@ export default function PausePage() {
       actualMinutes: Math.round(elapsedSeconds / 60),
       completionPct: pct,
       expEarned: Math.round((pct / 100) * fullExp),
-      coinEarned: Math.round((pct / 100) * fullCoin),
+      coinEarned: Math.round((pct / 100) * fullCoin) * (appState.isPremium ? 2 : 1),
       isValid: pct >= 50,
       streakSaved: pct >= 50,
       plannerBlockId: sessionState?.plannerBlockId,
