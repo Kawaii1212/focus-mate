@@ -84,7 +84,8 @@ type Action =
   | { type: 'USE_STREAK_SHIELD' }
   | { type: 'ADD_STREAK_SHIELD'; payload: number }
   | { type: 'SET_PREMIUM'; payload: { isPremium: boolean; premiumExpiry: string | null } }
-  | { type: 'RENEW_SHIELDS' };
+  | { type: 'RENEW_SHIELDS' }
+  | { type: 'CHANGE_PERSONA'; payload: { personaId: MascotPersonaId; name?: string } };
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -277,6 +278,19 @@ function reducer(state: AppState, action: Action): AppState {
         isPremium: action.payload.isPremium,
         premiumExpiry: action.payload.premiumExpiry,
         user: state.user ? { ...state.user, isPremium: action.payload.isPremium } : state.user,
+      };
+    }
+
+    case 'CHANGE_PERSONA': {
+      if (!state.mascot) return state;
+      const newPersona = PERSONAS[action.payload.personaId];
+      return {
+        ...state,
+        mascot: {
+          ...state.mascot,
+          personaId: action.payload.personaId,
+          name: action.payload.name || newPersona.defaultMascotName,
+        },
       };
     }
 
