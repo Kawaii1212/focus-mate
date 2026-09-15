@@ -7,11 +7,15 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
+    if (!body || !body.data) {
+      return NextResponse.json({ message: 'OK' }, { status: 200 });
+    }
+
     let verifiedData: any;
     try {
       verifiedData = await verifyWebhookPayload(body);
     } catch {
-      return NextResponse.json({ message: 'Invalid webhook signature' }, { status: 400 });
+      return NextResponse.json({ message: 'OK' }, { status: 200 });
     }
 
     if (verifiedData.code !== '00' || !verifiedData.success) {
@@ -78,6 +82,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'OK' }, { status: 200 });
   } catch (error) {
     console.error('Webhook error:', error);
-    return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ message: 'OK' }, { status: 200 });
   }
 }
