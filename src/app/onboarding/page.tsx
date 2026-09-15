@@ -45,7 +45,7 @@ const TIME_OPTIONS = [
 ];
 
 export default function OnboardingFlow() {
-  const { dispatch } = useApp();
+  const { state: appState, dispatch } = useApp();
   const router = useRouter();
 
   const [step, setStep] = useState<Step>('role');
@@ -225,7 +225,11 @@ export default function OnboardingFlow() {
                   key={id}
                   personaId={id}
                   selected={selectedEgg === id}
-                  onClick={() => setSelectedEgg(id)}
+                  locked={!!PERSONAS[id].isPremium && !appState.isPremium}
+                  onClick={() => {
+                    if (PERSONAS[id].isPremium && !appState.isPremium) return;
+                    setSelectedEgg(id);
+                  }}
                   size={100}
                 />
               ))}

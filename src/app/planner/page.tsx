@@ -95,6 +95,10 @@ export default function PlannerPage() {
 
   const handleAddDeadline = async () => {
     if (!dlForm.taskName || !dlForm.dueDate || !dlForm.estimatedHours || !appState.user) return;
+    if (!appState.isPremium && appState.plannerState.deadlines.length >= 3) {
+      alert('Bạn đã đạt giới hạn 3 deadline cho tài khoản miễn phí. Nâng cấp Premium để thêm unlimited deadline!');
+      return;
+    }
     try {
       const dl: Deadline = {
         id: '', // Backend will generate

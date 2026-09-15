@@ -83,7 +83,8 @@ type Action =
   | { type: 'BUY_ITEM'; payload: { itemId: string; price: number } }
   | { type: 'USE_STREAK_SHIELD' }
   | { type: 'ADD_STREAK_SHIELD'; payload: number }
-  | { type: 'SET_PREMIUM'; payload: { isPremium: boolean; premiumExpiry: string | null } };
+  | { type: 'SET_PREMIUM'; payload: { isPremium: boolean; premiumExpiry: string | null } }
+  | { type: 'RENEW_SHIELDS' };
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -132,6 +133,7 @@ function reducer(state: AppState, action: Action): AppState {
         coin: 50, // starter coins
         energy: 100,
         streakShields: 1,
+        lastShieldRenewal: new Date().toISOString(),
         name: action.payload.mascotName || persona.defaultMascotName,
       };
       return {
@@ -278,6 +280,24 @@ function reducer(state: AppState, action: Action): AppState {
       };
     }
 
+    case 'RENEW_SHIELDS': {
+      if (!state.mascot) return state;
+      const now = new Date();
+      const lastRenewal = state.mascot.lastShieldRenewal ? new Date(state.mascot.lastShieldRenewal) : null;
+      const sameMonth = lastRenewal &&
+        lastRenewal.getFullYear() === now.getFullYear() &&
+        lastRenewal.getMonth() === now.getMonth();
+      if (sameMonth) return state;
+      return {
+        ...state,
+        mascot: {
+          ...state.mascot,
+          streakShields: Math.max(state.mascot.streakShields, 5),
+          lastShieldRenewal: now.toISOString(),
+        },
+      };
+    }
+
     default:
       return state;
   }
@@ -324,6 +344,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
     checkStreakRisk();
   }, [state.streakCurrent, state.streakTodayValid, state.lastStudyDate]);
+
+  // Auto-renew streak shields monthly
+  useEffect(() => {
+    if (state.mascot) {
+      dispatch({ type: 'RENEW_SHIELDS' });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }

@@ -71,7 +71,7 @@ export default function ActiveSessionPage() {
 
   const pct = timer.completionPct;
   const earnedExp = Math.round((pct / 100) * fullExp);
-  const earnedCoin = Math.round((pct / 100) * fullCoin);
+  const earnedCoin = Math.round((pct / 100) * fullCoin) * (appState.isPremium ? 2 : 1);
 
   const handlePause = () => {
     timer.pause();
@@ -102,7 +102,7 @@ export default function ActiveSessionPage() {
       actualMinutes,
       completionPct,
       expEarned: Math.round((completionPct / 100) * fullExp),
-      coinEarned: Math.round((completionPct / 100) * fullCoin),
+      coinEarned: Math.round((completionPct / 100) * fullCoin) * (appState.isPremium ? 2 : 1),
       isValid,
       streakSaved: isValid,
       plannerBlockId: session.plannerBlockId,

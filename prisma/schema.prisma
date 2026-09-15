@@ -39,7 +39,8 @@ model Mascot {
   expToNextLevel Int    @default(100)
   coin           Int    @default(50)
   energy         Int    @default(100)
-  streakShields  Int    @default(1)
+  streakShields  Int       @default(1)
+  lastShieldRenewal DateTime?
   name           String
 
   user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)

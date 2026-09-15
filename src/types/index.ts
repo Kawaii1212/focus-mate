@@ -35,6 +35,7 @@ export interface Mascot {
   coin: number;
   energy: number; // 0-100
   streakShields: number;
+  lastShieldRenewal?: string | null;
   name: string;
 }
 
