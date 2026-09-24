@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppProvider } from "@/store/AppContext";
+import { TimerProvider } from "@/store/TimerContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -14,13 +15,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <AppProvider>
-        <TooltipProvider>
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-            {children}
-          </Suspense>
-          <Toaster />
-          <Sonner />
-        </TooltipProvider>
+        <TimerProvider>
+          <TooltipProvider>
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+              {children}
+            </Suspense>
+            <Toaster />
+            <Sonner />
+          </TooltipProvider>
+        </TimerProvider>
       </AppProvider>
     </QueryClientProvider>
   );

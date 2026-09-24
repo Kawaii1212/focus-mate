@@ -3,17 +3,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useApp, useMascot } from '@/store/AppContext';
-import { FULL_EXP_PER_SESSION, FULL_COIN_PER_SESSION } from '@/lib/mascotData';
+import { useTimerSession } from '@/store/TimerContext';
 import { sessionApi } from '@/lib/api';
 import AppLayout from '@/components/layout/AppLayout';
 import MascotSVG from '@/components/mascot/MascotSVG';
 import SpeechBubble from '@/components/mascot/SpeechBubble';
-import { PERSONAS, getRandomSpeech } from '@/lib/mascotData';
+import { getRandomSpeech } from '@/lib/mascotData';
 import { useTimer, formatTime } from '@/hooks/useTimer';
 import { StudySession } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Pause, Square, Play, Flame, Zap, Star } from 'lucide-react';
+import { Pause, Square, Flame, Zap, Star } from 'lucide-react';
 import QuitWarningModal from '@/components/pomodoro/QuitWarningModal';
 
 interface SessionState {
@@ -30,32 +30,39 @@ export default function ActiveSessionPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const location = { pathname, state: (() => { try { return JSON.parse(searchParams?.get('state') || 'null'); } catch { return null; } })() };;
-  const session = (() => { try { return JSON.parse(searchParams?.get('state') || 'null'); } catch { return null; } })() as SessionState;
+  const urlSession = (() => { try { return JSON.parse(searchParams?.get('state') || 'null'); } catch { return null; } })() as SessionState | null;
   const { state: appState, dispatch } = useApp();
   const mascot = useMascot();
+  const { session: timerSession, hydrated, startSession, clearSession } = useTimerSession();
 
-  const timer = useTimer(session?.focusMinutes ?? 25);
+  const timer = useTimer();
   const [showQuitWarning, setShowQuitWarning] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
   const [speech, setSpeech] = useState('');
+  const completingRef = useRef(false);
+
+  // Global timer state survives sidebar navigation; URL is only a bootstrap fallback
+  const session: SessionState | null = hydrated ? (timerSession ?? urlSession) : null;
 
   const fullExp = Math.round((session?.focusMinutes ?? 25) * 1.1);
   const fullCoin = Math.round((session?.focusMinutes ?? 25) * 0.44);
 
-  // Start timer automatically
+  // Bootstrap from URL when there is no global session (deep link / first visit)
   useEffect(() => {
-    if (!hasStarted && session) {
-      timer.start(session.elapsedSeconds ?? 0);
-      setHasStarted(true);
-      if (mascot) {
-        setSpeech(getRandomSpeech(mascot.personaId, 'studying'));
-      }
+    if (!hydrated || timerSession || !urlSession || completingRef.current) return;
+    const target = urlSession.focusMinutes * 60;
+    const from = urlSession.elapsedSeconds ?? 0;
+    if (target > 0 && from >= target) {
+      // Stale URL from an already-finished session — do not resurrect it
+      router.replace('/study');
+      return;
     }
-  }, [session, hasStarted]);
+    startSession(urlSession, from);
+  }, [hydrated, timerSession, urlSession, startSession, router]);
 
   // Rotate mascot speech every 2 minutes
   useEffect(() => {
     if (!mascot) return;
+    setSpeech(getRandomSpeech(mascot.personaId, 'studying'));
     const interval = setInterval(() => {
       setSpeech(getRandomSpeech(mascot.personaId, 'studying'));
     }, 120 * 1000);
@@ -64,19 +71,26 @@ export default function ActiveSessionPage() {
 
   // Auto-complete when timer reaches 0
   useEffect(() => {
-    if (timer.elapsedSeconds >= timer.targetSeconds && timer.targetSeconds > 0 && hasStarted) {
+    if (!hydrated || completingRef.current) return;
+    if (timer.targetSeconds > 0 && timer.elapsedSeconds >= timer.targetSeconds && session) {
       handleComplete();
     }
-  }, [timer.elapsedSeconds, timer.targetSeconds, hasStarted]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timer.elapsedSeconds, timer.targetSeconds, hydrated, session]);
 
   const pct = timer.completionPct;
   const earnedExp = Math.round((pct / 100) * fullExp);
   const earnedCoin = Math.round((pct / 100) * fullCoin) * (appState.isPremium ? 2 : 1);
 
   const handlePause = () => {
+    if (!session) return;
     timer.pause();
     const pauseState = {
-      ...session,
+      taskTitle: session.taskTitle,
+      focusMinutes: session.focusMinutes,
+      breakMinutes: session.breakMinutes,
+      mode: session.mode,
+      plannerBlockId: session.plannerBlockId,
       elapsedSeconds: timer.elapsedSeconds,
     };
     router.push(`/study/pause?state=${encodeURIComponent(JSON.stringify(pauseState))}`);
@@ -91,8 +105,13 @@ export default function ActiveSessionPage() {
   };
 
   const handleComplete = async () => {
-    const actualMinutes = Math.round(timer.elapsedSeconds / 60);
-    const completionPct = Math.min(100, (timer.elapsedSeconds / timer.targetSeconds) * 100);
+    if (completingRef.current || !session) return;
+    completingRef.current = true;
+
+    const targetSeconds = session.focusMinutes * 60;
+    const elapsedSeconds = Math.min(timer.elapsedSeconds, targetSeconds);
+    const actualMinutes = Math.round(elapsedSeconds / 60);
+    const completionPct = targetSeconds > 0 ? Math.min(100, (elapsedSeconds / targetSeconds) * 100) : 0;
     const isValid = completionPct >= 50;
 
     const s: StudySession = {
@@ -129,8 +148,17 @@ export default function ActiveSessionPage() {
       dispatch({ type: 'COMPLETE_PLANNER_BLOCK', payload: session.plannerBlockId });
     }
 
+    clearSession();
     router.push(`/study/complete?state=${encodeURIComponent(JSON.stringify(s))}`);
   };
+
+  if (!hydrated) {
+    return (
+      <AppLayout>
+        <div className="text-center py-20 text-muted-foreground">Đang tải phiên học...</div>
+      </AppLayout>
+    );
+  }
 
   if (!session) {
     return (

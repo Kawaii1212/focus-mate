@@ -23,7 +23,7 @@ export default function CoStudyRoomPage() {
   const stateStr = searchParams?.get('state');
   const roomInfo = React.useMemo(() => {
     try {
-      return JSON.parse(stateStr || 'null') as { id: string; name: string; isHost?: boolean; checkInInterval?: number } | null;
+      return JSON.parse(stateStr || 'null') as { id: string; name: string; isHost?: boolean; checkInInterval?: number; maxMembers?: number } | null;
     } catch {
       return null;
     }
@@ -47,7 +47,29 @@ export default function CoStudyRoomPage() {
   const [sharedMinutes, setSharedMinutes] = useState(0); 
   const [members, setMembers] = useState<Record<string, CoStudyMember>>({});
   const [sessionMinutes, setSessionMinutes] = useState(0);
-  const [pomodoroState, setPomodoroState] = useState({ timeLeft: 25 * 60, isActive: false, mode: 'focus' });
+  const [pomodoroState, setPomodoroState] = useState<{
+    timeLeft: number;
+    isActive: boolean;
+    mode: string;
+    endsAt: number | null;
+  }>({ timeLeft: 25 * 60, isActive: false, mode: 'focus', endsAt: null });
+  const [pomodoroNow, setPomodoroNow] = useState(() => Date.now());
+
+  const applyServerPomodoro = (serverPomodoro: {
+    timeLeft?: number;
+    isActive?: boolean;
+    mode?: string;
+    endsAt?: number | null;
+  } | null | undefined) => {
+    if (!serverPomodoro || typeof serverPomodoro.timeLeft !== 'number') return;
+    setPomodoroState((prev) => ({
+      timeLeft: serverPomodoro.timeLeft ?? prev.timeLeft,
+      isActive: serverPomodoro.isActive ?? prev.isActive,
+      mode: serverPomodoro.mode ?? prev.mode,
+      endsAt: typeof serverPomodoro.endsAt === 'number' ? serverPomodoro.endsAt : null,
+    }));
+    setPomodoroNow(Date.now());
+  };
 
   // Personal check-in countdown
   useEffect(() => {
@@ -80,7 +102,10 @@ export default function CoStudyRoomPage() {
         if (res.ok) {
           const roomData = await res.json();
           setMembers(roomData.members || {});
-          setPomodoroState(roomData.pomodoro);
+          // Host is authoritative for the pomodoro: never let a stale poll clobber local state
+          if (actionStr !== 'poll' || !roomInfo.isHost) {
+            applyServerPomodoro(roomData.pomodoro);
+          }
         }
       } catch (err) {
         console.error("Action error:", err);
@@ -134,44 +159,48 @@ export default function CoStudyRoomPage() {
     return () => window.removeEventListener('beforeunload', handleUnload);
   }, [roomInfo, state.user]);
 
-  // Pomodoro Sync Effect
+  // Pomodoro: wall-clock countdown based on endsAt (survives polling, no interval churn)
+  const derivedTimeLeft = React.useMemo(() => {
+    if (pomodoroState.isActive && pomodoroState.endsAt) {
+      return Math.max(0, Math.ceil((pomodoroState.endsAt - pomodoroNow) / 1000));
+    }
+    return pomodoroState.timeLeft;
+  }, [pomodoroState, pomodoroNow]);
+
   useEffect(() => {
+    if (!pomodoroState.isActive) return;
+    const tick = () => setPomodoroNow(Date.now());
+    tick();
+    const interval = setInterval(tick, 500);
+    const onVisibilityChange = () => {
+      if (!document.hidden) tick();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [pomodoroState.isActive]);
+
+  // When the pomodoro hits zero: host auto-switches mode, members stop
+  useEffect(() => {
+    if (!pomodoroState.isActive || derivedTimeLeft > 0) return;
     if (!roomInfo?.id || !state.user) return;
-    let interval: ReturnType<typeof setInterval> | undefined;
-    
-    const syncPomodoro = (nextState: any) => {
-      if (!roomInfo.isHost) return;
+
+    if (roomInfo.isHost) {
+      const nextMode = pomodoroState.mode === 'focus' ? 'break' : 'focus';
+      const nextTime = nextMode === 'focus' ? 25 * 60 : 5 * 60;
+      const nextState = { timeLeft: nextTime, mode: nextMode, isActive: false, endsAt: null };
+      setPomodoroState(nextState);
       fetch('/api/costudy/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'sync', roomId: roomInfo.id, userId: state.user?.id, pomodoro: nextState })
+        body: JSON.stringify({ action: 'sync', roomId: roomInfo.id, userId: state.user.id, pomodoro: nextState })
       }).catch(console.error);
-    };
-
-    if (pomodoroState.isActive && pomodoroState.timeLeft > 0) {
-      interval = setInterval(() => {
-        setPomodoroState(prev => {
-          const next = { ...prev, timeLeft: prev.timeLeft - 1 };
-          if (roomInfo.isHost && next.timeLeft % 5 === 0) { // sync every 5s
-             syncPomodoro(next);
-          }
-          return next;
-        });
-      }, 1000);
-    } else if (pomodoroState.isActive && pomodoroState.timeLeft === 0) {
-       // auto switch
-       if (roomInfo.isHost) {
-         const nextMode = pomodoroState.mode === 'focus' ? 'break' : 'focus';
-         const nextTime = nextMode === 'focus' ? 25 * 60 : 5 * 60;
-         const nextState = { timeLeft: nextTime, mode: nextMode, isActive: false };
-         setPomodoroState(nextState);
-         syncPomodoro(nextState);
-       } else {
-         setPomodoroState(prev => ({ ...prev, isActive: false }));
-       }
+    } else {
+      setPomodoroState((prev) => (prev.isActive ? { ...prev, isActive: false, endsAt: null } : prev));
     }
-    return () => clearInterval(interval);
-  }, [pomodoroState.isActive, pomodoroState.timeLeft, roomInfo, state.user]);
+  }, [derivedTimeLeft, pomodoroState.isActive, pomodoroState.mode, roomInfo, state.user]);
 
   // Personal check-in countdown
   useEffect(() => {
@@ -230,30 +259,31 @@ export default function CoStudyRoomPage() {
   };
 
   const pomodoroAction = async (action: 'toggle' | 'reset' | 'focus' | 'break') => {
-    if (!roomInfo?.isHost || !roomInfo?.id) return;
-    const nextState = { ...pomodoroState };
+    if (!roomInfo?.isHost || !roomInfo?.id || !state.user) return;
+    let nextState: { timeLeft: number; isActive: boolean; mode: string; endsAt: number | null };
+
     if (action === 'toggle') {
-      nextState.isActive = !nextState.isActive;
+      if (pomodoroState.isActive) {
+        nextState = { ...pomodoroState, timeLeft: derivedTimeLeft, isActive: false, endsAt: null };
+      } else {
+        const left = pomodoroState.timeLeft > 0 ? pomodoroState.timeLeft : (pomodoroState.mode === 'focus' ? 25 * 60 : 5 * 60);
+        nextState = { ...pomodoroState, timeLeft: left, isActive: true, endsAt: Date.now() + left * 1000 };
+      }
     } else if (action === 'reset') {
-      nextState.isActive = false;
-      nextState.timeLeft = nextState.mode === 'focus' ? 25 * 60 : 5 * 60;
+      nextState = { isActive: false, timeLeft: pomodoroState.mode === 'focus' ? 25 * 60 : 5 * 60, mode: pomodoroState.mode, endsAt: null };
     } else if (action === 'focus') {
-      nextState.mode = 'focus';
-      nextState.timeLeft = 25 * 60;
-      nextState.isActive = false;
-    } else if (action === 'break') {
-      nextState.mode = 'break';
-      nextState.timeLeft = 5 * 60;
-      nextState.isActive = false;
+      nextState = { mode: 'focus', timeLeft: 25 * 60, isActive: false, endsAt: null };
+    } else {
+      nextState = { mode: 'break', timeLeft: 5 * 60, isActive: false, endsAt: null };
     }
+
     setPomodoroState(nextState);
-    if (roomInfo && state.user) {
-      fetch('/api/costudy/action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'sync', roomId: roomInfo.id, userId: state.user.id, pomodoro: nextState })
-      }).catch(console.error);
-    }
+    setPomodoroNow(Date.now());
+    fetch('/api/costudy/action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'sync', roomId: roomInfo.id, userId: state.user.id, pomodoro: nextState })
+    }).catch(console.error);
   };
 
   const countdownPct = (countdown / checkInSeconds) * 100;
@@ -345,7 +375,7 @@ export default function CoStudyRoomPage() {
           {/* Right: Group progress */}
           <div className="space-y-4">
             <CoStudyPomodoro 
-              state={pomodoroState} 
+              state={{ timeLeft: derivedTimeLeft, isActive: pomodoroState.isActive, mode: pomodoroState.mode }} 
               isHost={roomInfo?.isHost ?? false} 
               onAction={pomodoroAction} 
             />

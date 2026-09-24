@@ -112,6 +112,7 @@ model ActiveRoom {
   pomodoroTimeLeft       Int    @default(1500)
   pomodoroIsActive       Boolean @default(false)
   pomodoroMode           String @default("focus")
+  pomodoroEndsAt         DateTime?
 
   members                RoomMember[]
 }

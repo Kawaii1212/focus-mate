@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useEffect, useState } from 'react';
+import { getElapsedSeconds, useTimerSession } from '@/store/TimerContext';
 
 export interface TimerHookReturn {
   elapsedSeconds: number;
@@ -6,69 +7,36 @@ export interface TimerHookReturn {
   isRunning: boolean;
   isPaused: boolean;
   completionPct: number;
-  start: (fromElapsed?: number) => void;
   pause: () => void;
   resume: () => void;
-  reset: () => void;
   targetSeconds: number;
 }
 
-export function useTimer(targetMinutes: number): TimerHookReturn {
-  const targetSeconds = targetMinutes * 60;
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+export function useTimer(): TimerHookReturn {
+  const { session, pauseSession, resumeSession } = useTimerSession();
+  const [, setTick] = useState(0);
 
-  const clearTimer = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, []);
-
-  const start = useCallback((fromElapsed = 0) => {
-    setElapsedSeconds(fromElapsed);
-    setIsRunning(true);
-    setIsPaused(false);
-  }, []);
-
-  const pause = useCallback(() => {
-    setIsRunning(false);
-    setIsPaused(true);
-    clearTimer();
-  }, [clearTimer]);
-
-  const resume = useCallback(() => {
-    setIsRunning(true);
-    setIsPaused(false);
-  }, []);
-
-  const reset = useCallback(() => {
-    setIsRunning(false);
-    setIsPaused(false);
-    setElapsedSeconds(0);
-    clearTimer();
-  }, [clearTimer]);
+  const isRunning = session !== null && session.runningSince !== null;
+  const targetSeconds = session ? session.focusMinutes * 60 : 0;
 
   useEffect(() => {
-    if (isRunning && !isPaused) {
-      intervalRef.current = setInterval(() => {
-        setElapsedSeconds((prev) => {
-          if (prev >= targetSeconds) {
-            clearTimer();
-            setIsRunning(false);
-            return prev;
-          }
-          return prev + 1;
-        });
-      }, 1000);
-    } else {
-      clearTimer();
-    }
-    return clearTimer;
-  }, [isRunning, isPaused, targetSeconds, clearTimer]);
+    if (!isRunning) return;
 
+    const tick = () => setTick((t) => t + 1);
+    const interval = setInterval(tick, 500);
+    const onVisibilityChange = () => {
+      if (!document.hidden) tick();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [isRunning]);
+
+  const rawElapsed = getElapsedSeconds(session);
+  const elapsedSeconds = targetSeconds > 0 ? Math.min(targetSeconds, rawElapsed) : 0;
   const remainingSeconds = Math.max(0, targetSeconds - elapsedSeconds);
   const completionPct = targetSeconds > 0 ? Math.min(100, (elapsedSeconds / targetSeconds) * 100) : 0;
 
@@ -76,12 +44,10 @@ export function useTimer(targetMinutes: number): TimerHookReturn {
     elapsedSeconds,
     remainingSeconds,
     isRunning,
-    isPaused,
+    isPaused: session !== null && session.runningSince === null,
     completionPct,
-    start,
-    pause,
-    resume,
-    reset,
+    pause: pauseSession,
+    resume: resumeSession,
     targetSeconds,
   };
 }

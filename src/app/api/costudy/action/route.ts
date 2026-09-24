@@ -29,12 +29,16 @@ export async function POST(request: Request) {
       }).catch(() => {});
     } else if (action === 'sync') {
       if (room.hostId === userId) {
+        const endsAt = pomodoro?.isActive
+          ? new Date(Date.now() + Math.max(0, Math.floor(pomodoro.timeLeft ?? 0)) * 1000)
+          : null;
         await prisma.activeRoom.update({
           where: { id: roomId },
           data: {
             pomodoroTimeLeft: pomodoro.timeLeft,
             pomodoroIsActive: pomodoro.isActive,
-            pomodoroMode: pomodoro.mode
+            pomodoroMode: pomodoro.mode,
+            pomodoroEndsAt: endsAt
           }
         });
       }
@@ -55,7 +59,8 @@ export async function POST(request: Request) {
       pomodoro: {
         timeLeft: updatedRoom.pomodoroTimeLeft,
         isActive: updatedRoom.pomodoroIsActive,
-        mode: updatedRoom.pomodoroMode
+        mode: updatedRoom.pomodoroMode,
+        endsAt: updatedRoom.pomodoroEndsAt ? updatedRoom.pomodoroEndsAt.getTime() : null
       },
       members: updatedRoom.members.reduce((acc, m) => ({ ...acc, [m.id]: m }), {})
     });

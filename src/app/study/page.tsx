@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Timer, Users, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTimerSession } from '@/store/TimerContext';
 
 const FOCUS_PRESETS = [25, 45, 60, 90];
 const BREAK_PRESETS = [5, 10, 15, 20];
@@ -20,6 +21,8 @@ export default function PomodoroSetupPage() {
   const location = { pathname, state: (() => { try { return JSON.parse(searchParams?.get('state') || 'null'); } catch { return null; } })() };;
   const prefill = (() => { try { return JSON.parse(searchParams?.get('state') || 'null'); } catch { return null; } })() as { taskTitle?: string; focusMinutes?: number; plannerBlockId?: string } | null;
 
+  const { session: activeSession, hydrated, startSession } = useTimerSession();
+
   const [taskTitle, setTaskTitle] = useState(prefill?.taskTitle ?? '');
   const [focusMin, setFocusMin] = useState(prefill?.focusMinutes ?? 45);
   const [breakMin, setBreakMin] = useState(10);
@@ -27,19 +30,26 @@ export default function PomodoroSetupPage() {
   const [customBreak, setCustomBreak] = useState('');
   const [mode, setMode] = useState<'solo' | 'costudy'>('solo');
 
+  // A session is already in progress: send the user back to it instead of resetting
+  useEffect(() => {
+    if (!hydrated || !activeSession) return;
+    router.replace(activeSession.runningSince !== null ? '/study/active' : '/study/pause');
+  }, [hydrated, activeSession, router]);
+
   const effectiveFocus = customFocus ? parseInt(customFocus) || focusMin : focusMin;
   const effectiveBreak = customBreak ? parseInt(customBreak) || breakMin : breakMin;
 
   const handleStart = () => {
     if (!taskTitle.trim()) return;
-    const state = {
+    const config = {
       taskTitle: taskTitle.trim(),
       focusMinutes: effectiveFocus,
       breakMinutes: effectiveBreak,
       mode,
       plannerBlockId: prefill?.plannerBlockId,
     };
-    router.push(`/study/active?state=${encodeURIComponent(JSON.stringify(state))}`);
+    startSession(config, 0);
+    router.push(`/study/active?state=${encodeURIComponent(JSON.stringify(config))}`);
   };
 
   return (
