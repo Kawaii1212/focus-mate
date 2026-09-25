@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.79",
+    "@ai-sdk/react": "^4.0.116",
     "@enter-pro/analytics-sdk": "^0.0.10",
     "@hookform/resolvers": "^5.2.1",
     "@microsoft/signalr": "^10.0.11",
