@@ -10,8 +10,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
-  const [localInput, setLocalInput] = useState('');
-  const { messages, append, isLoading } = useChat();
+  const { messages, input, setInput, handleSubmit, isLoading } = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,29 +81,21 @@ export function Chatbot() {
           
           <CardFooter className="p-3 bg-background border-t">
             <form onSubmit={e => { 
-              e.preventDefault(); 
-              if (localInput.trim()) {
-                try {
-                  const messageText = localInput;
-                  setLocalInput('');
-                  
-                  if (typeof append !== 'function') {
-                    alert("SDK Error: append is not a function");
-                    return;
-                  }
-                  
-                  const promise = append({ id: Date.now().toString(), role: 'user', content: messageText });
-                  if (promise && promise.catch) {
-                    promise.catch(err => alert("API Error: " + err.message));
-                  }
-                } catch (err: any) {
-                  alert("Sync Error: " + err.message);
-                }
+              if (!input || !input.trim()) {
+                e.preventDefault();
+                return;
+              }
+              try {
+                handleSubmit(e);
+              } catch (err: any) {
+                alert("Submit Error: " + err.message);
               }
             }} className="flex w-full gap-2 relative">
               <Input 
-                value={localInput} 
-                onChange={(e) => setLocalInput(e.target.value)} 
+                value={input || ''} 
+                onChange={(e) => {
+                  if (typeof setInput === 'function') setInput(e.target.value);
+                }} 
                 placeholder="Ask me anything..." 
                 className="flex-1 pr-12 rounded-full bg-muted/50 focus-visible:ring-primary/30"
                 disabled={isLoading}
@@ -113,26 +104,7 @@ export function Chatbot() {
                 type="submit" 
                 size="icon" 
                 className="absolute right-1 top-1 h-8 w-8 rounded-full z-10" 
-                disabled={isLoading || !localInput.trim()}
-                onClick={(e) => {
-                  // Fallback for click just in case form submit is blocked
-                  if (!localInput.trim()) return;
-                  e.preventDefault();
-                  try {
-                    const messageText = localInput;
-                    setLocalInput('');
-                    if (typeof append !== 'function') {
-                      alert("SDK Error: append is not a function");
-                      return;
-                    }
-                    const promise = append({ id: Date.now().toString(), role: 'user', content: messageText });
-                    if (promise && promise.catch) {
-                      promise.catch(err => alert("API Error: " + err.message));
-                    }
-                  } catch (err: any) {
-                    alert("Sync Click Error: " + err.message);
-                  }
-                }}
+                disabled={isLoading || !(input || '').trim()}
               >
                 <Send size={16} className="ml-1" />
               </Button>
