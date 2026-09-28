@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const { messages } = await req.json();
 
     const result = await streamText({
-      model: google('gemini-flash-latest'),
+      model: google('gemini-3.5-flash'),
       messages,
       system: "You are a helpful and polite AI assistant built into the application."
     });
