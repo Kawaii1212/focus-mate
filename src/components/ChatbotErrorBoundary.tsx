@@ -25,8 +25,13 @@ export class ChatbotErrorBoundary extends React.Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
-      // Just render nothing if the chatbot crashes, preventing the whole app from crashing
-      return null;
+      // Render the error to see what's wrong
+      return (
+        <div className="fixed bottom-6 right-6 z-[100] w-80 p-4 bg-red-100 text-red-900 border border-red-500 rounded shadow-lg">
+          <h3 className="font-bold">Chatbot Error</h3>
+          <p className="text-sm break-words">{this.state.error?.message}</p>
+        </div>
+      );
     }
 
     return this.props.children;

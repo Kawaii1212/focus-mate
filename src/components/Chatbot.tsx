@@ -39,7 +39,7 @@ export function Chatbot() {
           </CardHeader>
           
           <CardContent className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/10" ref={scrollRef}>
-            {messages.length === 0 && (
+            {(!messages || messages.length === 0) && (
               <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground space-y-3">
                 <div className="bg-primary/10 p-4 rounded-full">
                   <Bot size={40} className="text-primary" />
@@ -48,8 +48,8 @@ export function Chatbot() {
                 <p className="text-sm">How can I help you today?</p>
               </div>
             )}
-            {messages.map(m => (
-              <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {(messages || []).map(m => (
+              <div key={m.id || Math.random().toString()} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {m.role !== 'user' && (
                   <Avatar className="w-8 h-8 border bg-background shrink-0 mt-1">
                     <AvatarFallback className="bg-transparent"><Bot size={16} className="text-primary" /></AvatarFallback>
@@ -82,7 +82,7 @@ export function Chatbot() {
           <CardFooter className="p-3 bg-background border-t">
             <form onSubmit={handleSubmit} className="flex w-full gap-2 relative">
               <Input 
-                value={input} 
+                value={input || ''} 
                 onChange={handleInputChange} 
                 placeholder="Ask me anything..." 
                 className="flex-1 pr-12 rounded-full bg-muted/50 focus-visible:ring-primary/30"
@@ -92,7 +92,7 @@ export function Chatbot() {
                 type="submit" 
                 size="icon" 
                 className="absolute right-1 top-1 h-8 w-8 rounded-full" 
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || !(input || '').trim()}
               >
                 <Send size={16} className="ml-1" />
               </Button>
