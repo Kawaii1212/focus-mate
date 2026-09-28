@@ -10,6 +10,15 @@ export async function POST(request: Request) {
     if (!room) return NextResponse.json({ message: "Room not found" }, { status: 404 });
 
     if (action === 'join') {
+      // Capacity: only block NEW members when the room is full.
+      // Existing members may always re-enter (refresh, second tab, etc.).
+      const existingMembership = await prisma.roomMember.findUnique({ where: { id: userId } });
+      if (existingMembership?.roomId !== roomId) {
+        const memberCount = await prisma.roomMember.count({ where: { roomId } });
+        if (memberCount >= room.maxMembers) {
+          return NextResponse.json({ message: 'Room is full' }, { status: 409 });
+        }
+      }
       await prisma.roomMember.upsert({
         where: { id: userId },
         update: { roomId, name, mascotPersonaId: String(mascotPersonaId), lastCheckIn: new Date() },
@@ -17,10 +26,28 @@ export async function POST(request: Request) {
       });
     } else if (action === 'leave') {
       await prisma.roomMember.delete({ where: { id: userId } }).catch(() => {});
-      
-      const remainingMembers = await prisma.roomMember.count({ where: { roomId } });
-      if (remainingMembers === 0) {
+
+      const remainingMembers = await prisma.roomMember.findMany({
+        where: { roomId },
+        select: { id: true }
+      });
+      if (remainingMembers.length === 0) {
         await prisma.activeRoom.delete({ where: { id: roomId } }).catch(() => {});
+      } else {
+        // Re-read hostId after the delete: a concurrent leave may have already
+        // reassigned it, and we must not orphan the host role.
+        const roomNow = await prisma.activeRoom.findUnique({
+          where: { id: roomId },
+          select: { hostId: true }
+        });
+        if (roomNow && roomNow.hostId === userId) {
+          // Reassign the host (lowest user id for determinism) so shared
+          // pomodoro control is not orphaned when the original host leaves.
+          const nextHostId = remainingMembers.map((m) => m.id).sort()[0];
+          await prisma.activeRoom
+            .update({ where: { id: roomId }, data: { hostId: nextHostId } })
+            .catch(() => {});
+        }
       }
     } else if (action === 'status') {
       await prisma.roomMember.update({
@@ -29,12 +56,16 @@ export async function POST(request: Request) {
       }).catch(() => {});
     } else if (action === 'sync') {
       if (room.hostId === userId) {
+        const endsAt = pomodoro?.isActive
+          ? new Date(Date.now() + Math.max(0, Math.floor(pomodoro.timeLeft ?? 0)) * 1000)
+          : null;
         await prisma.activeRoom.update({
           where: { id: roomId },
           data: {
             pomodoroTimeLeft: pomodoro.timeLeft,
             pomodoroIsActive: pomodoro.isActive,
-            pomodoroMode: pomodoro.mode
+            pomodoroMode: pomodoro.mode,
+            pomodoroEndsAt: endsAt
           }
         });
       }
@@ -55,7 +86,8 @@ export async function POST(request: Request) {
       pomodoro: {
         timeLeft: updatedRoom.pomodoroTimeLeft,
         isActive: updatedRoom.pomodoroIsActive,
-        mode: updatedRoom.pomodoroMode
+        mode: updatedRoom.pomodoroMode,
+        endsAt: updatedRoom.pomodoroEndsAt ? updatedRoom.pomodoroEndsAt.getTime() : null
       },
       members: updatedRoom.members.reduce((acc, m) => ({ ...acc, [m.id]: m }), {})
     });

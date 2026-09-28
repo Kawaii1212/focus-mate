@@ -143,6 +143,48 @@ export interface CoStudyMember {
   lastCheckIn: string;
 }
 
+export interface PomodoroState {
+  timeLeft: number;
+  isActive: boolean;
+  mode: 'focus' | 'break';
+  /** Epoch ms when the running pomodoro reaches zero (wall-clock countdown). */
+  endsAt?: number | null;
+}
+
+export interface ChatMessage {
+  id: string;
+  roomId: string;
+  userId: string;
+  senderName: string;
+  mascotPersonaId: MascotPersonaId;
+  content: string;
+  createdAt: string; // ISO datetime
+  pending?: boolean;
+}
+
+// Realtime presence payload tracked by each connected client
+export type CoStudyPresenceStatus = 'studying' | 'online' | 'away';
+
+export interface CoStudyPresence {
+  userId: string;
+  name: string;
+  mascotPersonaId: MascotPersonaId;
+  status: CoStudyPresenceStatus;
+  cameraEnabled: boolean;
+  microphoneEnabled: boolean;
+  joinedVideoCall: boolean;
+}
+
+export type CoStudyDisplayState = 'ONLINE' | 'STUDYING' | 'AWAY' | 'OFFLINE' | 'IN_VIDEO_CALL';
+
+export interface CallPeerState {
+  userId: string;
+  name: string;
+  mascotPersonaId: MascotPersonaId;
+  stream: MediaStream | null;
+  connectionState: RTCPeerConnectionState;
+}
+
 export interface ShopItem {
   id: string;
   name: string;

@@ -23,8 +23,12 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { id, name, hostId, maxMembers, checkInIntervalMinutes } = body;
 
+    if (typeof name !== 'string' || name.trim().length === 0) {
+      return NextResponse.json({ message: 'Invalid room name' }, { status: 400 });
+    }
+
     const data: any = {
-      name,
+      name: name.trim(),
       hostId,
       maxMembers,
       checkInIntervalMinutes
@@ -36,7 +40,22 @@ export async function POST(request: Request) {
       include: { members: true }
     });
 
-    return NextResponse.json(newRoom);
+    // Shape matches CoStudyRoomData (same contract as GET /api/costudy/rooms/[roomId])
+    return NextResponse.json({
+      id: newRoom.id,
+      name: newRoom.name,
+      hostId: newRoom.hostId,
+      maxMembers: newRoom.maxMembers,
+      checkInIntervalMinutes: newRoom.checkInIntervalMinutes,
+      sharedMinutes: newRoom.sharedMinutes,
+      pomodoro: {
+        timeLeft: newRoom.pomodoroTimeLeft,
+        isActive: newRoom.pomodoroIsActive,
+        mode: newRoom.pomodoroMode,
+        endsAt: newRoom.pomodoroEndsAt ? newRoom.pomodoroEndsAt.getTime() : null,
+      },
+      members: newRoom.members.reduce((acc, m) => ({ ...acc, [m.id]: m }), {})
+    });
   } catch (error) {
     console.error("CREATE room error:", error);
     return NextResponse.json({ message: "Error" }, { status: 500 });

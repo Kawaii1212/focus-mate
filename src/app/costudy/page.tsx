@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMascot } from '@/store/AppContext';
-import { PERSONAS } from '@/lib/mascotData';
+import { useApp } from '@/store/AppContext';
+import { useToast } from '@/hooks/use-toast';
+import { costudyApi } from '@/lib/costudy';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,12 +16,15 @@ import { Users, Plus, LogIn, Clock, Star } from 'lucide-react';
 
 export default function CoStudyLobbyPage() {
   const router = useRouter();
-  const mascot = useMascot();
+  const { state } = useApp();
+  const user = state.user;
+  const { toast } = useToast();
   const [roomName, setRoomName] = useState('');
   const [maxMembers, setMaxMembers] = useState('4');
   const [checkInInterval, setCheckInInterval] = useState('30');
   const [joinCode, setJoinCode] = useState('');
-  
+  const [creating, setCreating] = useState(false);
+
   interface ActiveRoom { id: string; name: string; maxMembers: number; checkInIntervalMinutes: number; sharedMinutes: number; members: Record<string, unknown>; }
   const [activeRooms, setActiveRooms] = useState<ActiveRoom[]>([]);
 
@@ -43,27 +47,40 @@ export default function CoStudyLobbyPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleCreate = () => {
-    if (!roomName.trim()) return;
-    const state = {
-      id: Date.now().toString(),
-      name: roomName.trim(),
-      maxMembers: parseInt(maxMembers),
-      isHost: true,
-      checkInInterval: parseInt(checkInInterval)
-    };
-    router.push(`/costudy/room?state=${encodeURIComponent(JSON.stringify(state))}`);
+  const handleCreate = async () => {
+    if (!roomName.trim() || creating) return;
+    if (!user) {
+      toast({ title: 'Vui lòng đăng nhập để tạo phòng', variant: 'destructive' });
+      return;
+    }
+    setCreating(true);
+    const id = Date.now().toString();
+    try {
+      await costudyApi.createRoom({
+        id,
+        name: roomName.trim(),
+        hostId: user.id,
+        maxMembers: parseInt(maxMembers),
+        checkInIntervalMinutes: parseInt(checkInInterval),
+      });
+      router.push(`/costudy/room/${id}`);
+    } catch (err) {
+      setCreating(false);
+      toast({
+        title: 'Không tạo được phòng',
+        description: 'Vui lòng thử lại.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  const handleJoin = (roomId: string, roomName: string) => {
-    const state = { id: roomId, name: roomName, isHost: false };
-    router.push(`/costudy/room?state=${encodeURIComponent(JSON.stringify(state))}`);
+  const handleJoin = (roomId: string) => {
+    router.push(`/costudy/room/${roomId}`);
   };
 
   const handleJoinByCode = () => {
     if (joinCode.trim().length >= 4) {
-      const state = { id: joinCode.trim(), name: 'Phòng Ẩn', isHost: false };
-      router.push(`/costudy/room?state=${encodeURIComponent(JSON.stringify(state))}`);
+      router.push(`/costudy/room/${joinCode.trim()}`);
     }
   };
 
@@ -97,7 +114,7 @@ export default function CoStudyLobbyPage() {
                   <Select value={maxMembers} onValueChange={setMaxMembers}>
                     <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {[2, 3, 4, 5, 6, 8].map((n) => <SelectItem key={n} value={String(n)}>{n} người</SelectItem>)}
+                      {[2, 3, 4, 5, 6, 8, 10].map((n) => <SelectItem key={n} value={String(n)}>{n} người</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -114,11 +131,11 @@ export default function CoStudyLobbyPage() {
                 </div>
                 <Button
                   onClick={handleCreate}
-                  disabled={!roomName.trim()}
+                  disabled={!roomName.trim() || creating}
                   className="w-full rounded-xl"
                   style={{ background: 'hsl(var(--sky))', color: 'white' }}
                 >
-                  Tạo phòng
+                  {creating ? 'Đang tạo...' : 'Tạo phòng'}
                 </Button>
               </CardContent>
             </Card>
@@ -171,7 +188,7 @@ export default function CoStudyLobbyPage() {
                     </div>
                     <Button
                       size="sm"
-                      onClick={() => handleJoin(room.id, room.name)}
+                      onClick={() => handleJoin(room.id)}
                       disabled={memberCount >= room.maxMembers}
                       className="rounded-xl shrink-0"
                       style={memberCount < room.maxMembers ? { background: 'hsl(var(--sky))', color: 'white' } : {}}

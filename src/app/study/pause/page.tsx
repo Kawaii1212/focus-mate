@@ -3,6 +3,7 @@
 import React from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useMascot, useApp } from '@/store/AppContext';
+import { getElapsedSeconds, useTimerSession } from '@/store/TimerContext';
 import { getRandomSpeech } from '@/lib/mascotData';
 import { sessionApi } from '@/lib/api';
 import AppLayout from '@/components/layout/AppLayout';
@@ -19,42 +20,76 @@ export default function PausePage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const location = { pathname, state: (() => { try { return JSON.parse(searchParams?.get('state') || 'null'); } catch { return null; } })() };;
-  const sessionState = (() => { try { return JSON.parse(searchParams?.get('state') || 'null'); } catch { return null; } })() as {
+  const urlSession = (() => { try { return JSON.parse(searchParams?.get('state') || 'null'); } catch { return null; } })() as {
     taskTitle: string;
     focusMinutes: number;
     breakMinutes: number;
     mode: string;
     plannerBlockId?: string;
     elapsedSeconds: number;
-  };
+  } | null;
   const mascot = useMascot();
   const { state: appState, dispatch } = useApp();
+  const { session: timerSession, startSession, resumeSession, clearSession } = useTimerSession();
 
-  const elapsedSeconds = sessionState?.elapsedSeconds ?? 0;
-  const pct = sessionState
-    ? Math.round((elapsedSeconds / (sessionState.focusMinutes * 60)) * 100)
+  const sessionState = timerSession ?? urlSession;
+  const focusMinutes = sessionState?.focusMinutes ?? 0;
+  const elapsedSeconds = timerSession
+    ? getElapsedSeconds(timerSession)
+    : (urlSession?.elapsedSeconds ?? 0);
+  const pct = focusMinutes > 0
+    ? Math.min(100, Math.round((elapsedSeconds / (focusMinutes * 60)) * 100))
     : 0;
 
   const speech = mascot ? getRandomSpeech(mascot.personaId, 'paused') : '';
 
   const handleResume = () => {
-    router.push(`/study/active?state=${encodeURIComponent(JSON.stringify(sessionState))}`);
+    if (timerSession) {
+      resumeSession();
+    } else if (urlSession) {
+      startSession(
+        {
+          taskTitle: urlSession.taskTitle,
+          focusMinutes: urlSession.focusMinutes,
+          breakMinutes: urlSession.breakMinutes,
+          mode: urlSession.mode === 'costudy' ? 'costudy' : 'solo',
+          plannerBlockId: urlSession.plannerBlockId,
+        },
+        urlSession.elapsedSeconds ?? 0
+      );
+    }
+    const pushState = sessionState
+      ? {
+          taskTitle: sessionState.taskTitle,
+          focusMinutes: sessionState.focusMinutes,
+          breakMinutes: sessionState.breakMinutes,
+          mode: sessionState.mode,
+          plannerBlockId: sessionState.plannerBlockId,
+          elapsedSeconds,
+        }
+      : null;
+    router.push(
+      pushState
+        ? `/study/active?state=${encodeURIComponent(JSON.stringify(pushState))}`
+        : '/study/active'
+    );
   };
 
   const handleEnd = async () => {
-    const fullExp = Math.round((sessionState?.focusMinutes ?? 25) * 1.1);
-    const fullCoin = Math.round((sessionState?.focusMinutes ?? 25) * 0.44);
+    if (!sessionState) return;
+    const fullExp = Math.round(focusMinutes * 1.1);
+    const fullCoin = Math.round(focusMinutes * 0.44);
     const completedSession: StudySession = {
       id: '', // let backend generate
-      taskTitle: sessionState?.taskTitle ?? '',
-      targetMinutes: sessionState?.focusMinutes ?? 0,
+      taskTitle: sessionState.taskTitle ?? '',
+      targetMinutes: focusMinutes,
       actualMinutes: Math.round(elapsedSeconds / 60),
       completionPct: pct,
       expEarned: Math.round((pct / 100) * fullExp),
       coinEarned: Math.round((pct / 100) * fullCoin) * (appState.isPremium ? 2 : 1),
       isValid: pct >= 50,
       streakSaved: pct >= 50,
-      plannerBlockId: sessionState?.plannerBlockId,
+      plannerBlockId: sessionState.plannerBlockId,
       date: new Date().toISOString().split('T')[0],
       createdAt: new Date().toISOString(),
     };
@@ -77,6 +112,7 @@ export default function PausePage() {
     if (completedSession.plannerBlockId) {
       dispatch({ type: 'COMPLETE_PLANNER_BLOCK', payload: completedSession.plannerBlockId });
     }
+    clearSession();
     router.push(`/study/complete?state=${encodeURIComponent(JSON.stringify(completedSession))}`);
   };
 
@@ -131,6 +167,7 @@ export default function PausePage() {
           <Button
             variant="outline"
             onClick={handleEnd}
+            disabled={!sessionState}
             className="h-11 rounded-2xl"
           >
             <Square className="w-4 h-4 mr-2" /> Kết thúc phiên
