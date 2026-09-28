@@ -85,10 +85,17 @@ export function Chatbot() {
               e.preventDefault(); 
               if (localInput.trim()) {
                 try {
-                  const promise = append({ role: 'user', content: localInput });
+                  const messageText = localInput;
                   setLocalInput('');
+                  
+                  if (typeof append !== 'function') {
+                    alert("SDK Error: append is not a function");
+                    return;
+                  }
+                  
+                  const promise = append({ role: 'user', content: messageText });
                   if (promise && promise.catch) {
-                    promise.catch(err => alert("Async Error: " + err.message));
+                    promise.catch(err => alert("API Error: " + err.message));
                   }
                 } catch (err: any) {
                   alert("Sync Error: " + err.message);
@@ -105,8 +112,27 @@ export function Chatbot() {
               <Button 
                 type="submit" 
                 size="icon" 
-                className="absolute right-1 top-1 h-8 w-8 rounded-full" 
+                className="absolute right-1 top-1 h-8 w-8 rounded-full z-10" 
                 disabled={isLoading || !localInput.trim()}
+                onClick={(e) => {
+                  // Fallback for click just in case form submit is blocked
+                  if (!localInput.trim()) return;
+                  e.preventDefault();
+                  try {
+                    const messageText = localInput;
+                    setLocalInput('');
+                    if (typeof append !== 'function') {
+                      alert("SDK Error: append is not a function");
+                      return;
+                    }
+                    const promise = append({ role: 'user', content: messageText });
+                    if (promise && promise.catch) {
+                      promise.catch(err => alert("API Error: " + err.message));
+                    }
+                  } catch (err: any) {
+                    alert("Sync Click Error: " + err.message);
+                  }
+                }}
               >
                 <Send size={16} className="ml-1" />
               </Button>
