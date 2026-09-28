@@ -108,13 +108,14 @@ model ActiveRoom {
   maxMembers             Int    @default(4)
   checkInIntervalMinutes Int    @default(30)
   sharedMinutes          Int    @default(0)
-  
+
   pomodoroTimeLeft       Int    @default(1500)
   pomodoroIsActive       Boolean @default(false)
   pomodoroMode           String @default("focus")
   pomodoroEndsAt         DateTime?
 
   members                RoomMember[]
+  messages               RoomMessage[]
 }
 
 model RoomMember {
@@ -126,6 +127,20 @@ model RoomMember {
   lastCheckIn     DateTime @default(now())
 
   room            ActiveRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+model RoomMessage {
+  id              String   @id @default(uuid())
+  roomId          String
+  userId          String
+  senderName      String
+  mascotPersonaId String
+  content         String
+  createdAt       DateTime @default(now())
+
+  room            ActiveRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
 }
 
 model Payment {
