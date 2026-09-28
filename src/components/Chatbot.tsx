@@ -10,7 +10,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat();
+  const [localInput, setLocalInput] = useState('');
+  const { messages, append, isLoading } = useChat();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -80,10 +81,16 @@ export function Chatbot() {
           </CardContent>
           
           <CardFooter className="p-3 bg-background border-t">
-            <form onSubmit={handleSubmit} className="flex w-full gap-2 relative">
+            <form onSubmit={e => { 
+              e.preventDefault(); 
+              if (localInput.trim()) {
+                append({ role: 'user', content: localInput });
+                setLocalInput('');
+              }
+            }} className="flex w-full gap-2 relative">
               <Input 
-                value={input || ''} 
-                onChange={handleInputChange} 
+                value={localInput} 
+                onChange={(e) => setLocalInput(e.target.value)} 
                 placeholder="Ask me anything..." 
                 className="flex-1 pr-12 rounded-full bg-muted/50 focus-visible:ring-primary/30"
                 disabled={isLoading}
@@ -92,7 +99,7 @@ export function Chatbot() {
                 type="submit" 
                 size="icon" 
                 className="absolute right-1 top-1 h-8 w-8 rounded-full" 
-                disabled={isLoading || !(input || '').trim()}
+                disabled={isLoading || !localInput.trim()}
               >
                 <Send size={16} className="ml-1" />
               </Button>
