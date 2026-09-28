@@ -84,8 +84,15 @@ export function Chatbot() {
             <form onSubmit={e => { 
               e.preventDefault(); 
               if (localInput.trim()) {
-                append({ role: 'user', content: localInput });
-                setLocalInput('');
+                try {
+                  const promise = append({ role: 'user', content: localInput });
+                  setLocalInput('');
+                  if (promise && promise.catch) {
+                    promise.catch(err => alert("Async Error: " + err.message));
+                  }
+                } catch (err: any) {
+                  alert("Sync Error: " + err.message);
+                }
               }
             }} className="flex w-full gap-2 relative">
               <Input 
