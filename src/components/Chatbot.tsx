@@ -13,7 +13,7 @@ export function Chatbot() {
   const [localInput, setLocalInput] = useState('');
   
   // ai-sdk/react v4.0+ signature
-  const { messages, sendMessage, status } = useChat() as any;
+  const { messages, sendMessage, status, error } = useChat() as any;
   const isLoading = status === 'submitted' || status === 'streaming';
   
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -44,6 +44,11 @@ export function Chatbot() {
           </CardHeader>
           
           <CardContent className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/10" ref={scrollRef}>
+            {error && (
+              <div className="p-3 bg-red-100 text-red-900 border border-red-200 rounded-lg text-sm text-center">
+                <strong>Lỗi kết nối AI:</strong> {error.message || 'Không thể kết nối đến máy chủ.'}
+              </div>
+            )}
             {(!messages || messages.length === 0) && (
               <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground space-y-3">
                 <div className="bg-primary/10 p-4 rounded-full">
