@@ -93,7 +93,7 @@ export function Chatbot() {
                     return;
                   }
                   
-                  const promise = append({ role: 'user', content: messageText });
+                  const promise = append({ id: Date.now().toString(), role: 'user', content: messageText });
                   if (promise && promise.catch) {
                     promise.catch(err => alert("API Error: " + err.message));
                   }
@@ -125,7 +125,7 @@ export function Chatbot() {
                       alert("SDK Error: append is not a function");
                       return;
                     }
-                    const promise = append({ role: 'user', content: messageText });
+                    const promise = append({ id: Date.now().toString(), role: 'user', content: messageText });
                     if (promise && promise.catch) {
                       promise.catch(err => alert("API Error: " + err.message));
                     }
