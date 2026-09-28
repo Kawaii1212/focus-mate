@@ -66,7 +66,7 @@ export function Chatbot() {
                   </Avatar>
                 )}
                 <div className={`rounded-2xl px-4 py-2.5 max-w-[80%] text-sm shadow-sm ${m.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-background border text-foreground rounded-bl-none'}`}>
-                  {m.content}
+                  {m.content || (m.parts ? m.parts.map((p: any) => p.text).join('') : JSON.stringify(m))}
                 </div>
                 {m.role === 'user' && (
                   <Avatar className="w-8 h-8 shrink-0 mt-1">
