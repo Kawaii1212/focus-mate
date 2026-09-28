@@ -8,12 +8,19 @@ export async function POST(req: Request) {
     const { messages } = await req.json();
 
     const result = await streamText({
-      model: google('gemini-1.5-pro'),
+      model: google('gemini-1.5-flash'),
       messages,
       system: "You are a helpful and polite AI assistant built into the application."
     });
 
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      error: {
+        value: (error: unknown) => {
+          console.error("Stream Error:", error);
+          return "An error occurred while generating the response.";
+        }
+      }
+    });
   } catch (error) {
     console.error("Chat API Error:", error);
     return new Response(JSON.stringify({ error: "Failed to process chat request." }), {
