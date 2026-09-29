@@ -9,14 +9,20 @@ export async function POST(req: Request) {
     const { messages } = await req.json();
     console.log("Received messages:", JSON.stringify(messages, null, 2));
 
+    // Clean up UI-specific properties from messages before passing to AI SDK
+    const sanitizedMessages = messages.map((m: any) => ({
+      role: m.role,
+      content: m.content || (m.parts ? m.parts.map((p: any) => p.text).join('') : ''),
+    }));
+
     const result = await streamText({
       model: google('gemini-3.5-flash-lite'),
-      messages,
+      messages: sanitizedMessages,
       system: "You are a helpful and polite AI assistant built into the application."
     });
 
-    return result.toDataStreamResponse({
-      getErrorMessage: (error: any) => {
+    return result.toUIMessageStreamResponse({
+      onError: (error: any) => {
         console.error("Stream Error:", error);
         return error?.message || String(error) || "An error occurred while generating the response.";
       },
