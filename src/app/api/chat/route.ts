@@ -7,6 +7,7 @@ export const runtime = 'edge';
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
+    console.log("Received messages:", JSON.stringify(messages, null, 2));
 
     const result = await streamText({
       model: google('gemini-1.5-flash'),
@@ -15,9 +16,9 @@ export async function POST(req: Request) {
     });
 
     return result.toUIMessageStreamResponse({
-      onError: (error: unknown) => {
+      onError: (error: any) => {
         console.error("Stream Error:", error);
-        return "An error occurred while generating the response.";
+        return error?.message || String(error) || "An error occurred while generating the response.";
       },
     });
   } catch (error) {
