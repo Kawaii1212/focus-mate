@@ -464,7 +464,6 @@ export default function ChatPanel({ store, roomId, user, mascotPersonaId, online
             <div className="text-center py-6 space-y-1">
               <p className="text-3xl">👋</p>
               <p className="text-sm text-muted-foreground">Chưa có tin nhắn nào. Hãy gửi lời chào đến cả phòng!</p>
-              <p className="text-xs text-muted-foreground">Mẹo: bấm 😊 để chèn emoji, di chuột lên tin nhắn để thả tim / trả lời.</p>
             </div>
           ) : (
             messages.map((message) => (
@@ -544,7 +543,7 @@ export default function ChatPanel({ store, roomId, user, mascotPersonaId, online
             variant="ghost"
             size="icon"
             className="rounded-xl shrink-0 h-10 w-9"
-            title="Gửi ảnh (tự nén, tối đa 8MB — hoặc dán Ctrl+V)"
+            title="Gửi ảnh"
             onClick={() => imageInputRef.current?.click()}
             disabled={sendingFile}
           >
@@ -555,7 +554,7 @@ export default function ChatPanel({ store, roomId, user, mascotPersonaId, online
             variant="ghost"
             size="icon"
             className="rounded-xl shrink-0 h-10 w-9"
-            title="Gửi file (tối đa 5MB)"
+            title="Gửi file (tối đa 0.2MB)"
             onClick={() => fileInputRef.current?.click()}
             disabled={sendingFile}
           >
@@ -643,10 +642,6 @@ export default function ChatPanel({ store, roomId, user, mascotPersonaId, online
             <Send className="w-4 h-4" /> Gửi
           </Button>
         </div>
-
-        <p className="shrink-0 text-[11px] text-muted-foreground px-1">
-          Enter để gửi · Esc để hủy reply · Di chuột lên tin nhắn để ❤️ / trả lời · Dán ảnh (Ctrl+V) để gửi nhanh
-        </p>
 
         {!isSupabaseConfigured && (
           <p className="shrink-0 text-[11px] text-muted-foreground">

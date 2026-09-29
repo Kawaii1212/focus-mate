@@ -6,7 +6,7 @@ import { CoStudySettings, PomodoroState } from '@/types';
 interface CoStudyPomodoroProps {
   state: PomodoroState;
   settings: CoStudySettings;
-  onAction: (action: 'toggle' | 'reset' | 'focus' | 'break') => void;
+  onAction: (action: 'toggle' | 'reset') => void;
   onSettingsChange: (focusMinutes: number, breakMinutes: number) => void;
 }
 
@@ -27,25 +27,15 @@ export default function CoStudyPomodoro({ state, settings, onAction, onSettingsC
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center space-y-4">
+        {/* Current phase: display only. Switching focus<->break happens
+            automatically when a phase finishes — it cannot be forced manually. */}
         <div className="flex gap-2 p-1 bg-muted rounded-xl">
-          <Button
-            variant={state.mode === 'focus' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => onAction('focus')}
-            className="rounded-lg text-xs font-semibold"
-            style={state.mode === 'focus' ? { background: 'hsl(var(--sky))', color: 'white' } : {}}
+          <span
+            className="rounded-lg text-xs font-semibold px-4 py-1.5"
+            style={{ background: color, color: 'white' }}
           >
-            Tập trung
-          </Button>
-          <Button
-            variant={state.mode === 'break' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => onAction('break')}
-            className="rounded-lg text-xs font-semibold"
-            style={state.mode === 'break' ? { background: 'hsl(var(--peach))', color: 'white' } : {}}
-          >
-            Giải lao
-          </Button>
+            {state.mode === 'focus' ? 'Đang tập trung' : 'Đang giải lao'}
+          </span>
         </div>
 
         <div className="relative flex items-center justify-center py-2">
@@ -147,9 +137,6 @@ export default function CoStudyPomodoro({ state, settings, onAction, onSettingsC
               </Button>
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground text-center">
-            Ai cũng chỉnh được. Đổi thời lượng sẽ đặt lại đồng hồ.
-          </p>
         </div>
       </CardContent>
     </Card>

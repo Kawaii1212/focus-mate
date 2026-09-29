@@ -235,7 +235,7 @@ export default function CoStudyRoomPage() {
   // Anyone in the room may control the shared pomodoro. Works with or without
   // realtime: broadcast when the channel exists, optimistic local update +
   // REST persistence otherwise.
-  const pomodoroAction = (action: 'toggle' | 'reset' | 'focus' | 'break') => {
+  const pomodoroAction = (action: 'toggle' | 'reset') => {
     if (!roomId || !user) return;
     const current = snapshot.pomodoro ?? roomData?.pomodoro ?? DEFAULT_POMODORO;
     const focusLen = settings.focusMinutes * 60;
@@ -249,17 +249,13 @@ export default function CoStudyRoomPage() {
           current.timeLeft > 0 ? current.timeLeft : current.mode === 'focus' ? focusLen : breakLen;
         next = { ...current, timeLeft: left, isActive: true, endsAt: Date.now() + left * 1000 };
       }
-    } else if (action === 'reset') {
+    } else {
       next = {
         mode: current.mode,
         timeLeft: current.mode === 'focus' ? focusLen : breakLen,
         isActive: false,
         endsAt: null,
       };
-    } else if (action === 'focus') {
-      next = { mode: 'focus', timeLeft: focusLen, isActive: false, endsAt: null };
-    } else {
-      next = { mode: 'break', timeLeft: breakLen, isActive: false, endsAt: null };
     }
     lastPushRef.current = { pomodoro: next, settings, reconciled: false, at: Date.now() };
     if (store) {
