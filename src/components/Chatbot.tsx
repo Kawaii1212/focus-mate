@@ -8,9 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
+import { useUser } from '@/store/AppContext';
+
 export function Chatbot() {
+  const user = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const [localInput, setLocalInput] = useState('');
+  
+  // Return null immediately if not logged in
+  if (!user) return null;
   
   // ai-sdk/react v4.0+ signature
   const { messages, sendMessage, status, error } = useChat() as any;
