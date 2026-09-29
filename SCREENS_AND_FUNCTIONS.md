@@ -33,7 +33,7 @@
 | `/planner` | `src/app/planner/page.tsx` | AI Planner with 5 tabs: Overview, Fixed Schedule, Deadlines, Preferences, Weekly Calendar |
 | `/mascot-room` | `src/app/mascot-room/page.tsx` | Mascot virtual room (display, states, growth stages, certificates) |
 | `/costudy` | `src/app/costudy/page.tsx` | Co-study lobby (create room, join by code, active rooms list) |
-| `/costudy/room/[roomId]` | `src/app/costudy/room/[roomId]/page.tsx` | Active co-study room: check-ins, shared Pomodoro, real-time chat, group video call, participant presence (plus "not found" / "room full" screens) |
+| `/costudy/room/[roomId]` | `src/app/costudy/room/[roomId]/page.tsx` | Active co-study room: shared Pomodoro (any member controls), real-time chat, group video call, participant presence (plus "not found" / "room full" screens) |
 | `/shop` | `src/app/shop/page.tsx` | Item shop (snacks, hats, accessories, furniture, themes, streak shields) |
 | `/profile` | `src/app/profile/page.tsx` | User profile with stats, mascot progress, certificates, session history |
 | `/settings` | `src/app/settings/page.tsx` | Settings (account info, Pomodoro defaults, notification toggles) |
@@ -65,8 +65,10 @@
 | POST | `/api/costudy/rooms` | `src/app/api/costudy/rooms/route.ts` | Create a co-study room |
 | GET | `/api/costudy/rooms/[roomId]` | `src/app/api/costudy/rooms/[roomId]/route.ts` | Get one room (members, pomodoro, settings) |
 | GET | `/api/costudy/rooms/[roomId]/messages` | `src/app/api/costudy/rooms/[roomId]/messages/route.ts` | Room chat history (cursor pagination, catch-up) |
-| POST | `/api/costudy/rooms/[roomId]/messages` | `src/app/api/costudy/rooms/[roomId]/messages/route.ts` | Send a room chat message (persisted, then broadcast) |
-| POST | `/api/costudy/action` | `src/app/api/costudy/action/route.ts` | Room actions: join (enforces `maxMembers`, 409 when full), leave (reassigns host to lowest remaining user id), poll, status, sync |
+| POST | `/api/costudy/rooms/[roomId]/messages` | `src/app/api/costudy/rooms/[roomId]/messages/route.ts` | Send a room chat message: text (≤500 chars), replies, image/file data URLs (≤300KB) |
+| GET | `/api/costudy/rooms/[roomId]/reactions` | `src/app/api/costudy/rooms/[roomId]/reactions/route.ts` | List room message reactions |
+| POST | `/api/costudy/rooms/[roomId]/reactions` | `src/app/api/costudy/rooms/[roomId]/reactions/route.ts` | Toggle a reaction on a message |
+| POST | `/api/costudy/action` | `src/app/api/costudy/action/route.ts` | Room actions: join (enforces `maxMembers`, 409 when full), leave (reassigns host to lowest remaining user id), poll, status, sync (any member may write the shared pomodoro) |
 
 ---
 
@@ -96,11 +98,10 @@
 | Component | File | Purpose |
 |-----------|------|---------|
 | RoomHeader | `src/components/costudy/RoomHeader.tsx` | Room title, code badge, online count, in-call chip, leave button |
-| CheckInCard | `src/components/costudy/CheckInCard.tsx` | Personal check-in countdown with pause/check-in actions |
 | ParticipantsPanel | `src/components/costudy/ParticipantsPanel.tsx` | Live participant list with presence states (ONLINE/STUDYING/AWAY/OFFLINE/IN_VIDEO_CALL) and mic/camera flags |
-| ChatPanel | `src/components/costudy/ChatPanel.tsx` | Shared room chat: history, timestamps, avatars, typing indicators, unread count, auto-scroll |
+| ChatPanel | `src/components/costudy/ChatPanel.tsx` | Shared room chat: history, timestamps, avatars, typing indicators, unread count, auto-scroll, replies, image/file messages, emoji reactions |
 | VideoCallPanel | `src/components/costudy/VideoCallPanel.tsx` | Group video call: responsive tile grid, mic/camera controls, join/leave call |
-| CoStudyPomodoro | `src/components/costudy/CoStudyPomodoro.tsx` | Shared pomodoro ring (host-controlled, wall-clock countdown) |
+| CoStudyPomodoro | `src/components/costudy/CoStudyPomodoro.tsx` | Shared pomodoro ring (any member controls, wall-clock countdown, works with REST fallback when realtime is unavailable) |
 
 ---
 
@@ -113,7 +114,7 @@
 | `useIsMobile` | `src/hooks/use-mobile.tsx` | Responsive breakpoint detection (< 768px) |
 | `useToast` | `src/hooks/use-toast.ts` | Toast notification management |
 | `useCoStudyRoom` | `src/hooks/useCoStudyRoom.ts` | Realtime room channel: presence snapshot, pomodoro broadcasts (via module-level store) |
-| `useRoomChat` | `src/hooks/useRoomChat.ts` | Room chat: history, send, typing indicators, unread count, 30s catch-up |
+| `useRoomChat` | `src/hooks/useRoomChat.ts` | Room chat: history, send (text/reply/media), emoji reactions (realtime + DB + cache), typing indicators, unread count, 30s catch-up |
 | `useGroupCall` | `src/hooks/useGroupCall.ts` | WebRTC full-mesh group call: peers, mic/camera toggles, join/leave |
 | `useApp` | `src/store/AppContext.tsx` | Access global state + dispatch |
 | `useUser` | `src/store/AppContext.tsx` | Shortcut to current user |
@@ -150,12 +151,17 @@
 ### `src/lib/costudy.ts` - Co-Study API Client
 - `costudyApi.getRoom` / `createRoom` / `performAction` (join, leave, status, sync, poll)
 - `costudyApi.getMessages` (history, before/after cursors) / `sendMessage` (persisted)
+- `costudyApi.getReactions` / `toggleReaction` (message emoji reactions)
+
+### `src/lib/chatFormat.ts` - Chat Content Encoding
+- Text/reply/image/file messages encoded into the message `content` string (`[reply:]`, `[[img:`, `[[file:` prefixes)
+- Client-side image downscale with progressive fit under `MAX_MEDIA_CHARS` (200000); emoji sets for the reaction picker
 
 ### `src/lib/costudyRealtime.ts` - Co-Study Realtime Store
 - Module-level store per room (survives React remounts; channels are single-use)
 - One Supabase channel `room:{roomId}` per room: Presence + Broadcast events
 - Presence payload: userId, name, mascotPersonaId, status, cameraEnabled, microphoneEnabled, joinedVideoCall
-- Broadcast events: `chat-message`, `typing`, `pomodoro-sync`, `call-signal`, `call-ice`, `call-leave`
+- Broadcast events: `chat-message`, `chat-reaction`, `typing`, `pomodoro-sync`, `call-signal`, `call-ice`, `call-leave`
 - WebRTC signaling: deterministic initiator (smaller userId offers) avoids SDP glare; ICE candidates batched
 
 ### `src/lib/supabase.ts` - Supabase Client
@@ -205,7 +211,7 @@
 3. **Study**: Setup (task name, focus/break time, solo/co-study) -> Active session (timer, mascot, EXP preview) -> Pause/Resume -> Complete (rewards, level-up, certificates)
 4. **AI Planner**: Add deadlines + fixed blocks -> Configure preferences -> Generate weekly schedule -> Click blocks to start study sessions
 5. **Mascot Room**: View mascot at different states, growth stages, certificates
-6. **Co-Study**: Create/join rooms, shared Pomodoro (wall-clock countdown), check-in system, real-time shared chat (typing indicators, unread count, history), group video/audio call (WebRTC mesh with mic/camera controls), live participant presence and status
+6. **Co-Study**: Create/join rooms, shared Pomodoro (any member controls, wall-clock countdown), real-time shared chat (typing indicators, unread count, history), group video/audio call (WebRTC mesh with mic/camera controls), live participant presence and status
 7. **Shop**: Buy items with coins (snacks, hats, accessories, furniture, themes, skins, streak shields)
 8. **Profile**: Stats, mascot progress, certificates, session history, owned items
 9. **Settings**: Account info, Pomodoro defaults, notification toggles

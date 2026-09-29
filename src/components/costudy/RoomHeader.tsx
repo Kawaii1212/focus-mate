@@ -6,7 +6,6 @@ interface RoomHeaderProps {
   roomName: string;
   roomId: string;
   onlineCount: number;
-  checkInIntervalMinutes: number;
   inCallCount: number;
   onLeaveRoom: () => void;
 }
@@ -15,7 +14,6 @@ export default function RoomHeader({
   roomName,
   roomId,
   onlineCount,
-  checkInIntervalMinutes,
   inCallCount,
   onLeaveRoom,
 }: RoomHeaderProps) {
@@ -34,7 +32,7 @@ export default function RoomHeader({
           )}
         </div>
         <p className="text-muted-foreground text-sm mt-0.5">
-          {onlineCount} thành viên online · Check-in mỗi {checkInIntervalMinutes} phút
+          {onlineCount} thành viên online
         </p>
       </div>
       <Button

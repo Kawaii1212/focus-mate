@@ -7,12 +7,20 @@ import { ChatMessage, CoStudyPresence, MascotPersonaId, PomodoroState } from '@/
 
 export const RT_EVENTS = {
   CHAT_MESSAGE: 'chat-message',
+  CHAT_REACTION: 'chat-reaction',
   TYPING: 'typing',
   POMODORO_SYNC: 'pomodoro-sync',
   CALL_SIGNAL: 'call-signal',
   CALL_ICE: 'call-ice',
   CALL_LEAVE: 'call-leave',
 } as const;
+
+export interface ChatReactionPayload {
+  messageId: string;
+  emoji: string;
+  userId: string;
+  name: string;
+}
 
 export interface TypingPayload {
   userId: string;
@@ -118,19 +126,34 @@ class CoStudyRealtimeStore {
     this.channel.on('broadcast', { event: RT_EVENTS.POMODORO_SYNC }, ({ payload }) => {
       const state = payload as PomodoroState;
       if (state && typeof state.timeLeft === 'number' && typeof state.isActive === 'boolean') {
-        this.setSnapshot({
-          pomodoro: {
-            timeLeft: state.timeLeft,
-            isActive: state.isActive,
-            mode: state.mode === 'break' ? 'break' : 'focus',
-            endsAt: typeof state.endsAt === 'number' ? state.endsAt : null,
-          },
-        });
+        const next: PomodoroState = {
+          timeLeft: state.timeLeft,
+          isActive: state.isActive,
+          mode: state.mode === 'break' ? 'break' : 'focus',
+          endsAt: typeof state.endsAt === 'number' ? state.endsAt : null,
+        };
+        // Skip identical states: several members may broadcast the same
+        // auto-switch payload at once; no need to re-render for dupes.
+        const current = this.snapshot.pomodoro;
+        if (
+          current &&
+          current.timeLeft === next.timeLeft &&
+          current.isActive === next.isActive &&
+          current.mode === next.mode &&
+          (current.endsAt ?? null) === (next.endsAt ?? null)
+        ) {
+          return;
+        }
+        this.setSnapshot({ pomodoro: next });
       }
     });
 
     this.channel.on('broadcast', { event: RT_EVENTS.CHAT_MESSAGE }, ({ payload }) => {
       this.emit(RT_EVENTS.CHAT_MESSAGE, payload);
+    });
+
+    this.channel.on('broadcast', { event: RT_EVENTS.CHAT_REACTION }, ({ payload }) => {
+      this.emit(RT_EVENTS.CHAT_REACTION, payload);
     });
 
     this.channel.on('broadcast', { event: RT_EVENTS.TYPING }, ({ payload }) => {

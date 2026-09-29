@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Plus, LogIn, Clock, Star } from 'lucide-react';
+import { Users, Plus, LogIn, Star } from 'lucide-react';
 
 export default function CoStudyLobbyPage() {
   const router = useRouter();
@@ -21,7 +21,6 @@ export default function CoStudyLobbyPage() {
   const { toast } = useToast();
   const [roomName, setRoomName] = useState('');
   const [maxMembers, setMaxMembers] = useState('4');
-  const [checkInInterval, setCheckInInterval] = useState('30');
   const [joinCode, setJoinCode] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -61,7 +60,6 @@ export default function CoStudyLobbyPage() {
         name: roomName.trim(),
         hostId: user.id,
         maxMembers: parseInt(maxMembers),
-        checkInIntervalMinutes: parseInt(checkInInterval),
       });
       router.push(`/costudy/room/${id}`);
     } catch (err) {
@@ -118,17 +116,6 @@ export default function CoStudyLobbyPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Khoảng check-in</Label>
-                  <Select value={checkInInterval} onValueChange={setCheckInInterval}>
-                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="15">15 phút</SelectItem>
-                      <SelectItem value="30">30 phút</SelectItem>
-                      <SelectItem value="45">45 phút</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <Button
                   onClick={handleCreate}
                   disabled={!roomName.trim() || creating}
@@ -177,9 +164,6 @@ export default function CoStudyLobbyPage() {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> Check-in {room.checkInIntervalMinutes}ph
-                        </span>
                         <span className="flex items-center gap-1">
                           <Star className="w-3 h-3" /> {(room.sharedMinutes / 60).toFixed(1)}h chung
                         </span>

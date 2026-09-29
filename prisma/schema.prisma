@@ -116,6 +116,7 @@ model ActiveRoom {
 
   members                RoomMember[]
   messages               RoomMessage[]
+  reactions              RoomReaction[]
 }
 
 model RoomMember {
@@ -139,8 +140,25 @@ model RoomMessage {
   createdAt       DateTime @default(now())
 
   room            ActiveRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  reactions       RoomReaction[]
 
   @@index([roomId, createdAt])
+}
+
+model RoomReaction {
+  id        String   @id @default(uuid())
+  roomId    String
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  room    ActiveRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  message RoomMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([roomId])
+  @@index([messageId])
 }
 
 model Payment {

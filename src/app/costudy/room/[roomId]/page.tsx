@@ -1,21 +1,22 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useApp, useMascot } from '@/store/AppContext';
+import { useToast } from '@/hooks/use-toast';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import { costudyApi, CostudyApiError, CoStudyRoomData } from '@/lib/costudy';
 import { useCoStudyRoom } from '@/hooks/useCoStudyRoom';
 import { useGroupCall } from '@/hooks/useGroupCall';
 import AppLayout from '@/components/layout/AppLayout';
 import RoomHeader from '@/components/costudy/RoomHeader';
-import CheckInCard from '@/components/costudy/CheckInCard';
 import ParticipantsPanel from '@/components/costudy/ParticipantsPanel';
 import CoStudyPomodoro from '@/components/costudy/CoStudyPomodoro';
 import ChatPanel from '@/components/costudy/ChatPanel';
 import VideoCallPanel from '@/components/costudy/VideoCallPanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Clock, Hand, Users } from 'lucide-react';
+import { Clock, Users } from 'lucide-react';
 import { PomodoroState } from '@/types';
 
 const DEFAULT_POMODORO: PomodoroState = { timeLeft: 25 * 60, isActive: false, mode: 'focus' };
@@ -28,6 +29,7 @@ export default function CoStudyRoomPage() {
   const { state } = useApp();
   const user = state.user;
   const mascot = useMascot();
+  const { toast } = useToast();
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -37,14 +39,12 @@ export default function CoStudyRoomPage() {
   const [roomData, setRoomData] = useState<CoStudyRoomData | null>(null);
   const [loadState, setLoadState] = useState<'loading' | 'notfound' | 'full' | 'ready'>('loading');
 
-  // Personal study state
-  const [countdown, setCountdown] = useState(30 * 60);
-  const [isPaused, setIsPaused] = useState(false);
-  const [showCheckInAlert, setShowCheckInAlert] = useState(false);
+  // Personal session stat (minutes spent in this room)
   const [sessionMinutes, setSessionMinutes] = useState(0);
 
-  const isHost = Boolean(roomData && user && roomData.hostId === user.id);
-  const checkInMinutes = roomData?.checkInIntervalMinutes ?? 30;
+  // Tracks the pomodoro state this client last pushed (broadcast + REST), so
+  // the 30s poll can heal a failed REST write without clobbering other members.
+  const lastPushRef = useRef<{ state: PomodoroState; reconciled: boolean; at: number } | null>(null);
 
   // Auth guard (client-side session lives in localStorage)
   useEffect(() => {
@@ -63,7 +63,6 @@ export default function CoStudyRoomPage() {
       .then((room) => {
         if (cancelled) return;
         setRoomData(room);
-        setCountdown(room.checkInIntervalMinutes * 60);
         setLoadState('ready');
       })
       .catch(() => {
@@ -113,13 +112,6 @@ export default function CoStudyRoomPage() {
 
   const call = useGroupCall({ store, snapshot, user });
 
-  // Ask for notification permission once
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
-
   // Persist leave to DB when the tab closes/navigates away
   useEffect(() => {
     if (loadState !== 'ready' || !roomId || !user) return;
@@ -133,7 +125,11 @@ export default function CoStudyRoomPage() {
     return () => window.removeEventListener('beforeunload', handleUnload);
   }, [loadState, roomId, user]);
 
-  // 30s resync backstop: roster + pomodoro (in case a broadcast was missed)
+  // 30s resync backstop: roster + pomodoro (in case a broadcast was missed).
+  // Anyone may control the shared pomodoro, so this also heals a failed REST
+  // write: if the DB does not reflect what this client last pushed, push it
+  // again — at most once per push, so near-simultaneous actors converge
+  // instead of overwriting each other forever.
   useEffect(() => {
     if (loadState !== 'ready' || !roomId || !user) return;
     const interval = setInterval(() => {
@@ -142,57 +138,48 @@ export default function CoStudyRoomPage() {
         .then((fresh) => {
           setRoomData(fresh);
           if (!store) return;
-          if (isHost) {
-            // Self-healing: if an earlier `sync` write failed, the DB drifted
-            // from the host's local truth — push it again. Comparison ignores
-            // `endsAt` (server re-derives it with per-request latency).
-            const local = store.getSnapshot().pomodoro;
-            const db = fresh.pomodoro;
-            const inSync =
-              local &&
-              local.isActive === db.isActive &&
-              local.mode === db.mode &&
-              local.timeLeft === db.timeLeft;
-            if (local && !inSync) {
-              costudyApi.performAction('sync', roomId, user.id, { pomodoro: local }).catch(() => {});
+          const lastPush = lastPushRef.current;
+          const diverged =
+            lastPush &&
+            (lastPush.state.isActive !== fresh.pomodoro.isActive ||
+              lastPush.state.mode !== fresh.pomodoro.mode ||
+              lastPush.state.timeLeft !== fresh.pomodoro.timeLeft);
+          if (diverged && lastPush) {
+            // `endsAt` is intentionally excluded from the comparison: the
+            // server re-derives it with per-request latency, so exact
+            // equality never holds.
+            if (!lastPush.reconciled && Date.now() - lastPush.at < 120000) {
+              lastPush.reconciled = true;
+              costudyApi
+                .performAction('sync', roomId, user.id, { pomodoro: lastPush.state })
+                .catch(() => {});
+            } else {
+              store.applyPomodoro(fresh.pomodoro);
+              lastPushRef.current = null;
             }
           } else {
-            // Members follow the host's DB-synced pomodoro; the host's local
-            // ticking is the live source of truth and must not be rewound.
+            if (lastPush) lastPushRef.current = null; // DB converged with our push
             store.applyPomodoro(fresh.pomodoro);
           }
         })
         .catch(() => {});
     }, RESYNC_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [loadState, roomId, user, store, isHost]);
+  }, [loadState, roomId, user, store]);
 
-  // Personal check-in countdown (1s tick)
+  // Personal session timer (1s tick)
   useEffect(() => {
-    if (loadState !== 'ready' || isPaused) return;
+    if (loadState !== 'ready') return;
     const interval = setInterval(() => {
-      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
       setSessionMinutes((prev) => prev + 1 / 60);
     }, 1000);
     return () => clearInterval(interval);
-  }, [isPaused, loadState]);
-
-  // Check-in deadline reached → alert + mark self away
-  useEffect(() => {
-    if (loadState !== 'ready' || isPaused || countdown !== 0) return;
-    setShowCheckInAlert(true);
-    store?.updateMyPresence({ status: 'away' });
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('Đã đến giờ check-in!', {
-        body: 'Bạn vẫn đang học chứ? Hãy vào xác nhận nhé!',
-        icon: '/favicon.ico',
-      });
-    }
-  }, [countdown, isPaused, loadState, store]);
+  }, [loadState]);
 
   // Shared pomodoro: wall-clock countdown derived from `endsAt`, so the
-  // display survives broadcast hiccups without tick drift.
-  const pomodoro = snapshot.pomodoro ?? DEFAULT_POMODORO;
+  // display survives broadcast hiccups without tick drift. Falls back to the
+  // REST-polled room state when realtime is unavailable.
+  const pomodoro = snapshot.pomodoro ?? roomData?.pomodoro ?? DEFAULT_POMODORO;
   const [pomodoroNow, setPomodoroNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -210,9 +197,11 @@ export default function CoStudyRoomPage() {
     return pomodoro.timeLeft;
   }, [pomodoro, pomodoroNow]);
 
-  // Host: auto-switch focus <-> break when the running pomodoro hits zero
+  // Auto-switch focus <-> break when the running pomodoro hits zero.
+  // Anyone in the room may advance it; the payload is deterministic so
+  // simultaneous actors converge on the same state.
   useEffect(() => {
-    if (!store || !isHost || loadState !== 'ready' || !roomId || !user) return;
+    if (loadState !== 'ready' || !roomId || !user) return;
     if (!pomodoro.isActive || displayTimeLeft > 0) return;
     const nextMode = pomodoro.mode === 'focus' ? 'break' : 'focus';
     const next: PomodoroState = {
@@ -221,13 +210,23 @@ export default function CoStudyRoomPage() {
       isActive: false,
       endsAt: null,
     };
-    store.setPomodoro(next);
+    lastPushRef.current = { state: next, reconciled: false, at: Date.now() };
+    if (store) {
+      store.setPomodoro(next);
+    } else {
+      setRoomData((prev) => (prev ? { ...prev, pomodoro: next } : prev));
+    }
+    // Failures are healed by the 30s poll reconcile (lastPushRef above).
     costudyApi.performAction('sync', roomId, user.id, { pomodoro: next }).catch(() => {});
-  }, [displayTimeLeft, pomodoro.isActive, pomodoro.mode, store, isHost, loadState, roomId, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayTimeLeft, pomodoro.isActive, pomodoro.mode, store, loadState, roomId, user]);
 
+  // Anyone in the room may control the shared pomodoro. Works with or without
+  // realtime: broadcast when the channel exists, optimistic local update +
+  // REST persistence otherwise.
   const pomodoroAction = (action: 'toggle' | 'reset' | 'focus' | 'break') => {
-    if (!store || !isHost || !roomId || !user) return;
-    const current = snapshot.pomodoro ?? DEFAULT_POMODORO;
+    if (!roomId || !user) return;
+    const current = snapshot.pomodoro ?? roomData?.pomodoro ?? DEFAULT_POMODORO;
     let next: PomodoroState;
     if (action === 'toggle') {
       if (current.isActive) {
@@ -249,32 +248,23 @@ export default function CoStudyRoomPage() {
     } else {
       next = { mode: 'break', timeLeft: 5 * 60, isActive: false, endsAt: null };
     }
-    store.setPomodoro(next);
+    lastPushRef.current = { state: next, reconciled: false, at: Date.now() };
+    if (store) {
+      store.setPomodoro(next);
+    } else {
+      setRoomData((prev) => (prev ? { ...prev, pomodoro: next } : prev));
+    }
     setPomodoroNow(Date.now());
-    costudyApi.performAction('sync', roomId, user.id, { pomodoro: next }).catch(() => {});
+    costudyApi.performAction('sync', roomId, user.id, { pomodoro: next }).catch(() => {
+      toast({
+        title: 'Không đồng bộ được Pomodoro',
+        description: 'Thay đổi đã áp dụng. Vui lòng kiểm tra kết nối.',
+        variant: 'destructive',
+      });
+    });
   };
 
   // ---------------------------------------------------------------- actions
-
-  const handleCheckIn = () => {
-    setShowCheckInAlert(false);
-    setCountdown(checkInMinutes * 60);
-    store?.updateMyPresence({ status: 'studying' });
-    if (roomId && user) {
-      costudyApi.performAction('status', roomId, user.id, { status: 'focusing' }).catch(() => {});
-    }
-  };
-
-  const handleTogglePause = () => {
-    const nextPaused = !isPaused;
-    setIsPaused(nextPaused);
-    store?.updateMyPresence({ status: nextPaused ? 'online' : 'studying' });
-    if (roomId && user) {
-      costudyApi
-        .performAction('status', roomId, user.id, { status: nextPaused ? 'break' : 'focusing' })
-        .catch(() => {});
-    }
-  };
 
   const handleLeaveRoom = async () => {
     call.leaveCall();
@@ -360,25 +350,25 @@ export default function CoStudyRoomPage() {
   return (
     <AppLayout hideMascotPanel>
       <div className="space-y-5">
+        {!isSupabaseConfigured && (
+          <div className="rounded-2xl border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-foreground">
+            <span className="font-semibold">Chế độ hạn chế:</span> Realtime chưa được
+            cấu hình (thiếu <code className="font-mono">NEXT_PUBLIC_SUPABASE_*</code>) nên
+            chat, trạng thái thành viên và video call không cập nhật trực tiếp. Hãy thêm
+            biến môi trường rồi deploy lại.
+          </div>
+        )}
         <RoomHeader
           roomName={roomData?.name ?? 'Co-Study Room'}
           roomId={roomId}
           onlineCount={onlineCount}
-          checkInIntervalMinutes={checkInMinutes}
           inCallCount={inCallCount}
           onLeaveRoom={handleLeaveRoom}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          {/* Left: check-in + participants */}
+          {/* Left: participants */}
           <div className="lg:col-span-3 space-y-4 order-2 lg:order-1">
-            <CheckInCard
-              countdown={countdown}
-              checkInMinutes={checkInMinutes}
-              isPaused={isPaused}
-              onCheckIn={handleCheckIn}
-              onTogglePause={handleTogglePause}
-            />
             <ParticipantsPanel
               presence={snapshot.presence}
               roster={roomData?.members ?? {}}
@@ -391,7 +381,6 @@ export default function CoStudyRoomPage() {
             <VideoCallPanel call={call} presence={snapshot.presence} currentUserId={user.id} />
             <CoStudyPomodoro
               state={{ timeLeft: displayTimeLeft, isActive: pomodoro.isActive, mode: pomodoro.mode }}
-              isHost={isHost}
               onAction={pomodoroAction}
             />
             <Card className="rounded-2xl shadow-fm-sm">
@@ -416,38 +405,10 @@ export default function CoStudyRoomPage() {
               roomId={roomId}
               user={user}
               mascotPersonaId={mascot.personaId}
+              onlineCount={onlineCount}
             />
           </div>
         </div>
-
-        {/* Check-in modal */}
-        {showCheckInAlert && (
-          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
-            <Card className="rounded-3xl shadow-fm-lg w-full max-w-sm mx-4">
-              <CardContent className="p-8 text-center space-y-5">
-                <div
-                  className="w-16 h-16 rounded-full mx-auto flex items-center justify-center"
-                  style={{ background: 'hsl(var(--sky-light))' }}
-                >
-                  <Hand className="w-8 h-8" style={{ color: 'hsl(var(--sky))' }} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-foreground">Bạn vẫn thức chứ?</h3>
-                  <p className="text-muted-foreground text-sm mt-1">
-                    Đã đến giờ check-in! Bạn vẫn đang học chứ?
-                  </p>
-                </div>
-                <Button
-                  onClick={handleCheckIn}
-                  className="w-full h-12 rounded-2xl font-bold"
-                  style={{ background: 'hsl(var(--sky))', color: 'white' }}
-                >
-                  <Hand className="w-5 h-5 mr-2" /> Mình đây!
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
       </div>
     </AppLayout>
   );
