@@ -55,20 +55,19 @@ export async function POST(request: Request) {
         data: { status, lastCheckIn: new Date() }
       }).catch(() => {});
     } else if (action === 'sync') {
-      if (room.hostId === userId) {
-        const endsAt = pomodoro?.isActive
-          ? new Date(Date.now() + Math.max(0, Math.floor(pomodoro.timeLeft ?? 0)) * 1000)
-          : null;
-        await prisma.activeRoom.update({
-          where: { id: roomId },
-          data: {
-            pomodoroTimeLeft: pomodoro.timeLeft,
-            pomodoroIsActive: pomodoro.isActive,
-            pomodoroMode: pomodoro.mode,
-            pomodoroEndsAt: endsAt
-          }
-        });
-      }
+      // Anyone in the room may control the shared pomodoro (no host gate).
+      const endsAt = pomodoro?.isActive
+        ? new Date(Date.now() + Math.max(0, Math.floor(pomodoro.timeLeft ?? 0)) * 1000)
+        : null;
+      await prisma.activeRoom.update({
+        where: { id: roomId },
+        data: {
+          pomodoroTimeLeft: pomodoro.timeLeft,
+          pomodoroIsActive: pomodoro.isActive,
+          pomodoroMode: pomodoro.mode,
+          pomodoroEndsAt: endsAt
+        }
+      });
     } else if (action === 'poll') {
       // Just returning the room state below
     }

@@ -16,7 +16,7 @@ export interface CreateRoomPayload {
   name: string;
   hostId: string;
   maxMembers: number;
-  checkInIntervalMinutes: number;
+  checkInIntervalMinutes?: number;
 }
 
 export class CostudyApiError extends Error {
@@ -87,6 +87,27 @@ export const costudyApi = {
     payload: { userId: string; name: string; mascotPersonaId: MascotPersonaId; content: string }
   ): Promise<ChatMessage> =>
     request<ChatMessage>(`/api/costudy/rooms/${roomId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  getReactions: async (
+    roomId: string
+  ): Promise<{ messageId: string; emoji: string; userId: string }[]> => {
+    try {
+      return await request<{ messageId: string; emoji: string; userId: string }[]>(
+        `/api/costudy/rooms/${roomId}/reactions`
+      );
+    } catch {
+      return [];
+    }
+  },
+
+  toggleReaction: async (
+    roomId: string,
+    payload: { messageId: string; emoji: string; userId: string }
+  ): Promise<{ added: boolean; messageId: string; emoji: string; userId: string }> =>
+    request(`/api/costudy/rooms/${roomId}/reactions`, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),

@@ -9,7 +9,9 @@ const sendSchema = z.object({
   userId: z.string().min(1),
   name: z.string().min(1).max(60),
   mascotPersonaId: z.coerce.number().int().min(0).max(5),
-  content: z.string().trim().min(1).max(500),
+  // 500 chars for text + reply-quote overhead; media data URLs up to ~300KB
+  // (client fits images/files under MAX_MEDIA_CHARS; stays broadcast-safe).
+  content: z.string().trim().min(1).max(300000),
 });
 
 function toChatMessage(row: {

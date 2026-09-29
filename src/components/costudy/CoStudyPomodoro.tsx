@@ -5,11 +5,10 @@ import { PomodoroState } from '@/types';
 
 interface CoStudyPomodoroProps {
   state: PomodoroState;
-  isHost: boolean;
   onAction: (action: 'toggle' | 'reset' | 'focus' | 'break') => void;
 }
 
-export default function CoStudyPomodoro({ state, isHost, onAction }: CoStudyPomodoroProps) {
+export default function CoStudyPomodoro({ state, onAction }: CoStudyPomodoroProps) {
   const totalTime = state.mode === 'focus' ? 25 * 60 : 5 * 60;
   const pct = Math.min(100, ((totalTime - state.timeLeft) / totalTime) * 100);
 
@@ -22,7 +21,7 @@ export default function CoStudyPomodoro({ state, isHost, onAction }: CoStudyPomo
     <Card className="rounded-2xl shadow-fm-sm">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex justify-center gap-2">
-          Đồng hồ Pomodoro {isHost ? '(Host)' : ''}
+          Đồng hồ Pomodoro chung
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center space-y-4">
@@ -31,7 +30,6 @@ export default function CoStudyPomodoro({ state, isHost, onAction }: CoStudyPomo
             variant={state.mode === 'focus' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => onAction('focus')}
-            disabled={!isHost}
             className="rounded-lg text-xs font-semibold"
             style={state.mode === 'focus' ? { background: 'hsl(var(--sky))', color: 'white' } : {}}
           >
@@ -41,7 +39,6 @@ export default function CoStudyPomodoro({ state, isHost, onAction }: CoStudyPomo
             variant={state.mode === 'break' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => onAction('break')}
-            disabled={!isHost}
             className="rounded-lg text-xs font-semibold"
             style={state.mode === 'break' ? { background: 'hsl(var(--peach))', color: 'white' } : {}}
           >
@@ -77,21 +74,19 @@ export default function CoStudyPomodoro({ state, isHost, onAction }: CoStudyPomo
           </div>
         </div>
 
-        {isHost && (
-          <div className="flex gap-3">
-            <Button
-              size="icon"
-              onClick={() => onAction('toggle')}
-              className="rounded-full w-12 h-12 shadow-sm"
-              style={{ background: color, color: 'white' }}
-            >
-              {state.isActive ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-1" />}
-            </Button>
-            <Button size="icon" variant="outline" onClick={() => onAction('reset')} className="rounded-full w-12 h-12 shadow-sm">
-              <RotateCcw className="w-5 h-5 text-muted-foreground" />
-            </Button>
-          </div>
-        )}
+        <div className="flex gap-3">
+          <Button
+            size="icon"
+            onClick={() => onAction('toggle')}
+            className="rounded-full w-12 h-12 shadow-sm"
+            style={{ background: color, color: 'white' }}
+          >
+            {state.isActive ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-1" />}
+          </Button>
+          <Button size="icon" variant="outline" onClick={() => onAction('reset')} className="rounded-full w-12 h-12 shadow-sm">
+            <RotateCcw className="w-5 h-5 text-muted-foreground" />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
