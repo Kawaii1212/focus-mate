@@ -12,8 +12,8 @@ export function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [localInput, setLocalInput] = useState('');
   
-  // ai-sdk/react v4.0+ signature
-  const { messages, sendMessage, status, error } = useChat() as any;
+  // ai-sdk/react signature
+  const { messages, append, status, error } = useChat() as any;
   const isLoading = status === 'submitted' || status === 'streaming';
   
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -97,10 +97,10 @@ export function Chatbot() {
                 const messageText = localInput;
                 setLocalInput('');
                 
-                if (typeof sendMessage === 'function') {
-                  sendMessage({ role: 'user', content: messageText });
+                if (typeof append === 'function') {
+                  append({ role: 'user', content: messageText });
                 } else {
-                  alert('SDK Error: sendMessage is not a function');
+                  alert('SDK Error: append is not a function');
                 }
               } catch (err: any) {
                 alert("Submit Error: " + err.message);
