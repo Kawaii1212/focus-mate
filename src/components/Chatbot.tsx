@@ -15,9 +15,6 @@ export function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [localInput, setLocalInput] = useState('');
   
-  // Return null immediately if not logged in
-  if (!user) return null;
-  
   // ai-sdk/react v4.0+ signature
   const { messages, sendMessage, status, error } = useChat() as any;
   const isLoading = status === 'submitted' || status === 'streaming';
@@ -29,6 +26,9 @@ export function Chatbot() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Return null if not logged in (must be after all hooks)
+  if (!user) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-[100]">
