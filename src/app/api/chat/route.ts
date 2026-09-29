@@ -15,12 +15,10 @@ export async function POST(req: Request) {
     });
 
     return result.toUIMessageStreamResponse({
-      error: {
-        value: (error: unknown) => {
-          console.error("Stream Error:", error);
-          return "An error occurred while generating the response.";
-        }
-      }
+      onError: (error: unknown) => {
+        console.error("Stream Error:", error);
+        return "An error occurred while generating the response.";
+      },
     });
   } catch (error) {
     console.error("Chat API Error:", error);
