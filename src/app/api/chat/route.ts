@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     console.log("Received messages:", JSON.stringify(messages, null, 2));
 
     const result = await streamText({
-      model: google('gemini-3-flash'),
+      model: google('gemini-3.5-flash-lite'),
       messages,
       system: "You are a helpful and polite AI assistant built into the application."
     });
