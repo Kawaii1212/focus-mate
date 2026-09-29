@@ -1,0 +1,32 @@
+import { google } from '@ai-sdk/google';
+import { streamText } from 'ai';
+
+export const maxDuration = 30;
+export const runtime = 'edge';
+
+export async function POST(req: Request) {
+  try {
+    const { messages } = await req.json();
+
+    const result = await streamText({
+      model: google('gemini-3.5-flash'),
+      messages,
+      system: "You are a helpful and polite AI assistant built into the application."
+    });
+
+    return result.toUIMessageStreamResponse({
+      error: {
+        value: (error: unknown) => {
+          console.error("Stream Error:", error);
+          return "An error occurred while generating the response.";
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Chat API Error:", error);
+    return new Response(JSON.stringify({ error: "Failed to process chat request." }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
