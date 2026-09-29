@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured, RealtimeChannel } from '@/lib/supabase';
-import { ChatMessage, CoStudyPresence, MascotPersonaId, PomodoroState } from '@/types';
+import { ChatMessage, CoStudyPresence, CoStudySettings, MascotPersonaId, PomodoroState } from '@/types';
 
 // ---------------------------------------------------------------------------
 // Broadcast event contracts (shared by all room clients)
@@ -10,6 +10,7 @@ export const RT_EVENTS = {
   CHAT_REACTION: 'chat-reaction',
   TYPING: 'typing',
   POMODORO_SYNC: 'pomodoro-sync',
+  ROOM_SETTINGS: 'room-settings',
   CALL_SIGNAL: 'call-signal',
   CALL_ICE: 'call-ice',
   CALL_LEAVE: 'call-leave',
@@ -44,6 +45,11 @@ export interface CallLeavePayload {
   userId: string;
 }
 
+export interface RoomSettingsPayload {
+  focusMinutes: number;
+  breakMinutes: number;
+}
+
 // ---------------------------------------------------------------------------
 // Snapshot consumed by React (useSyncExternalStore)
 // ---------------------------------------------------------------------------
@@ -53,11 +59,13 @@ export interface CoStudySnapshot {
   ready: boolean;
   /** userId -> latest presence payload of everyone currently connected */
   presence: Record<string, CoStudyPresence>;
-  /** Latest shared pomodoro state (host broadcasts on state changes) */
+  /** Latest shared pomodoro state (any member broadcasts on state changes) */
   pomodoro: PomodoroState | null;
+  /** Latest shared session lengths (any member broadcasts on change) */
+  settings: CoStudySettings | null;
 }
 
-const EMPTY_SNAPSHOT: CoStudySnapshot = { ready: false, presence: {}, pomodoro: null };
+const EMPTY_SNAPSHOT: CoStudySnapshot = { ready: false, presence: {}, pomodoro: null, settings: null };
 export const getEmptySnapshot = () => EMPTY_SNAPSHOT;
 
 type StoreListener = () => void;
@@ -99,7 +107,7 @@ class CoStudyRealtimeStore {
   constructor(roomId: string, identity: CoStudyIdentity, initialPomodoro: PomodoroState) {
     this.roomId = roomId;
     this.identity = identity;
-    this.snapshot = { ready: false, presence: {}, pomodoro: initialPomodoro };
+    this.snapshot = { ready: false, presence: {}, pomodoro: initialPomodoro, settings: null };
     this.myPresence = {
       userId: identity.userId,
       name: identity.name,
@@ -150,6 +158,16 @@ class CoStudyRealtimeStore {
 
     this.channel.on('broadcast', { event: RT_EVENTS.CHAT_MESSAGE }, ({ payload }) => {
       this.emit(RT_EVENTS.CHAT_MESSAGE, payload);
+    });
+
+    this.channel.on('broadcast', { event: RT_EVENTS.ROOM_SETTINGS }, ({ payload }) => {
+      const state = payload as RoomSettingsPayload;
+      if (state && typeof state.focusMinutes === 'number' && typeof state.breakMinutes === 'number') {
+        this.applySettings({
+          focusMinutes: Math.min(180, Math.max(5, Math.floor(state.focusMinutes))),
+          breakMinutes: Math.min(60, Math.max(5, Math.floor(state.breakMinutes))),
+        });
+      }
     });
 
     this.channel.on('broadcast', { event: RT_EVENTS.CHAT_REACTION }, ({ payload }) => {
@@ -276,8 +294,8 @@ class CoStudyRealtimeStore {
   }
 
   /**
-   * Host-only: set the shared pomodoro locally AND broadcast to everyone else.
-   * (With `broadcast: { self: false }` the host does not receive its own event.)
+   * Set the shared pomodoro locally AND broadcast to everyone else.
+   * (With `broadcast: { self: false }` the sender does not receive its own event.)
    */
   setPomodoro(next: PomodoroState) {
     this.setSnapshot({ pomodoro: next });
@@ -295,6 +313,24 @@ class CoStudyRealtimeStore {
       (current.endsAt ?? null) !== (next.endsAt ?? null);
     if (changed) {
       this.setSnapshot({ pomodoro: next });
+    }
+  }
+
+  /** Set the shared session lengths locally AND broadcast to everyone else. */
+  setSettings(next: CoStudySettings) {
+    this.setSnapshot({ settings: next });
+    this.broadcast(RT_EVENTS.ROOM_SETTINGS, next);
+  }
+
+  /** Apply shared session lengths without broadcasting (used by the 30s REST resync). */
+  applySettings(next: CoStudySettings) {
+    const current = this.snapshot.settings;
+    if (
+      !current ||
+      current.focusMinutes !== next.focusMinutes ||
+      current.breakMinutes !== next.breakMinutes
+    ) {
+      this.setSnapshot({ settings: next });
     }
   }
 

@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useApp, useMascot } from '@/store/AppContext';
 import { useToast } from '@/hooks/use-toast';
 import { isSupabaseConfigured } from '@/lib/supabase';
-import { costudyApi, CostudyApiError, CoStudyRoomData } from '@/lib/costudy';
+import { costudyApi, CostudyApiError, CoStudyRoomData, DEFAULT_SETTINGS, nextPomodoroAfterFinish, pomodoroDisplayTimeLeft } from '@/lib/costudy';
 import { useCoStudyRoom } from '@/hooks/useCoStudyRoom';
 import { useGroupCall } from '@/hooks/useGroupCall';
 import AppLayout from '@/components/layout/AppLayout';
@@ -17,7 +17,7 @@ import VideoCallPanel from '@/components/costudy/VideoCallPanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Clock, Users } from 'lucide-react';
-import { PomodoroState } from '@/types';
+import { CoStudySettings, PomodoroState } from '@/types';
 
 const DEFAULT_POMODORO: PomodoroState = { timeLeft: 25 * 60, isActive: false, mode: 'focus' };
 const RESYNC_INTERVAL_MS = 30000;
@@ -42,9 +42,14 @@ export default function CoStudyRoomPage() {
   // Personal session stat (minutes spent in this room)
   const [sessionMinutes, setSessionMinutes] = useState(0);
 
-  // Tracks the pomodoro state this client last pushed (broadcast + REST), so
-  // the 30s poll can heal a failed REST write without clobbering other members.
-  const lastPushRef = useRef<{ state: PomodoroState; reconciled: boolean; at: number } | null>(null);
+  // Tracks what this client last pushed (pomodoro + settings, broadcast and
+  // REST), so the 30s poll can heal a failed write without clobbering others.
+  const lastPushRef = useRef<{
+    pomodoro: PomodoroState;
+    settings: CoStudySettings;
+    reconciled: boolean;
+    at: number;
+  } | null>(null);
 
   // Auth guard (client-side session lives in localStorage)
   useEffect(() => {
@@ -116,10 +121,13 @@ export default function CoStudyRoomPage() {
   useEffect(() => {
     if (loadState !== 'ready' || !roomId || !user) return;
     const handleUnload = () => {
-      navigator.sendBeacon(
-        '/api/costudy/action',
-        JSON.stringify({ action: 'leave', roomId, userId: user.id })
+      // Blob with an explicit JSON content type: more reliable than a plain
+      // string payload across browsers/proxies on unload.
+      const blob = new Blob(
+        [JSON.stringify({ action: 'leave', roomId, userId: user.id })],
+        { type: 'application/json' }
       );
+      navigator.sendBeacon('/api/costudy/action', blob);
     };
     window.addEventListener('beforeunload', handleUnload);
     return () => window.removeEventListener('beforeunload', handleUnload);
@@ -139,28 +147,38 @@ export default function CoStudyRoomPage() {
           setRoomData(fresh);
           if (!store) return;
           const lastPush = lastPushRef.current;
-          const diverged =
-            lastPush &&
-            (lastPush.state.isActive !== fresh.pomodoro.isActive ||
-              lastPush.state.mode !== fresh.pomodoro.mode ||
-              lastPush.state.timeLeft !== fresh.pomodoro.timeLeft);
-          if (diverged && lastPush) {
-            // `endsAt` is intentionally excluded from the comparison: the
-            // server re-derives it with per-request latency, so exact
-            // equality never holds.
-            if (!lastPush.reconciled && Date.now() - lastPush.at < 120000) {
+          if (lastPush) {
+            const pomoOk =
+              lastPush.pomodoro.isActive === fresh.pomodoro.isActive &&
+              lastPush.pomodoro.mode === fresh.pomodoro.mode &&
+              lastPush.pomodoro.timeLeft === fresh.pomodoro.timeLeft;
+            const settingsOk =
+              lastPush.settings.focusMinutes === fresh.settings.focusMinutes &&
+              lastPush.settings.breakMinutes === fresh.settings.breakMinutes;
+            if (pomoOk && settingsOk) {
+              lastPushRef.current = null; // DB converged with our push
+            } else if (!lastPush.reconciled && Date.now() - lastPush.at < 120000) {
               lastPush.reconciled = true;
-              costudyApi
-                .performAction('sync', roomId, user.id, { pomodoro: lastPush.state })
-                .catch(() => {});
+              if (!settingsOk) {
+                costudyApi
+                  .performAction('settings', roomId, user.id, {
+                    focusMinutes: lastPush.settings.focusMinutes,
+                    breakMinutes: lastPush.settings.breakMinutes,
+                  })
+                  .catch(() => {});
+              }
+              if (!pomoOk) {
+                costudyApi
+                  .performAction('sync', roomId, user.id, { pomodoro: lastPush.pomodoro })
+                  .catch(() => {});
+              }
+              return; // don't apply stale DB this round
             } else {
-              store.applyPomodoro(fresh.pomodoro);
               lastPushRef.current = null;
             }
-          } else {
-            if (lastPush) lastPushRef.current = null; // DB converged with our push
-            store.applyPomodoro(fresh.pomodoro);
           }
+          store.applyPomodoro(fresh.pomodoro);
+          store.applySettings(fresh.settings);
         })
         .catch(() => {});
     }, RESYNC_INTERVAL_MS);
@@ -180,6 +198,7 @@ export default function CoStudyRoomPage() {
   // display survives broadcast hiccups without tick drift. Falls back to the
   // REST-polled room state when realtime is unavailable.
   const pomodoro = snapshot.pomodoro ?? roomData?.pomodoro ?? DEFAULT_POMODORO;
+  const settings = snapshot.settings ?? roomData?.settings ?? DEFAULT_SETTINGS;
   const [pomodoroNow, setPomodoroNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -190,27 +209,19 @@ export default function CoStudyRoomPage() {
     return () => clearInterval(interval);
   }, [pomodoro.isActive]);
 
-  const displayTimeLeft = React.useMemo(() => {
-    if (pomodoro.isActive && typeof pomodoro.endsAt === 'number' && pomodoro.endsAt > 0) {
-      return Math.max(0, Math.ceil((pomodoro.endsAt - pomodoroNow) / 1000));
-    }
-    return pomodoro.timeLeft;
-  }, [pomodoro, pomodoroNow]);
+  const displayTimeLeft = React.useMemo(
+    () => pomodoroDisplayTimeLeft(pomodoro, pomodoroNow),
+    [pomodoro, pomodoroNow]
+  );
 
-  // Auto-switch focus <-> break when the running pomodoro hits zero.
-  // Anyone in the room may advance it; the payload is deterministic so
-  // simultaneous actors converge on the same state.
+  // Auto-switch focus <-> break when the running pomodoro hits zero, and back
+  // again after the break. Anyone in the room may advance it; the payload is
+  // deterministic so simultaneous actors converge on the same state.
   useEffect(() => {
     if (loadState !== 'ready' || !roomId || !user) return;
     if (!pomodoro.isActive || displayTimeLeft > 0) return;
-    const nextMode = pomodoro.mode === 'focus' ? 'break' : 'focus';
-    const next: PomodoroState = {
-      timeLeft: nextMode === 'focus' ? 25 * 60 : 5 * 60,
-      mode: nextMode,
-      isActive: false,
-      endsAt: null,
-    };
-    lastPushRef.current = { state: next, reconciled: false, at: Date.now() };
+    const next = nextPomodoroAfterFinish(pomodoro.mode, settings);
+    lastPushRef.current = { pomodoro: next, settings, reconciled: false, at: Date.now() };
     if (store) {
       store.setPomodoro(next);
     } else {
@@ -219,7 +230,7 @@ export default function CoStudyRoomPage() {
     // Failures are healed by the 30s poll reconcile (lastPushRef above).
     costudyApi.performAction('sync', roomId, user.id, { pomodoro: next }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayTimeLeft, pomodoro.isActive, pomodoro.mode, store, loadState, roomId, user]);
+  }, [displayTimeLeft, pomodoro.isActive, pomodoro.mode, settings.focusMinutes, settings.breakMinutes, store, loadState, roomId, user]);
 
   // Anyone in the room may control the shared pomodoro. Works with or without
   // realtime: broadcast when the channel exists, optimistic local update +
@@ -227,28 +238,30 @@ export default function CoStudyRoomPage() {
   const pomodoroAction = (action: 'toggle' | 'reset' | 'focus' | 'break') => {
     if (!roomId || !user) return;
     const current = snapshot.pomodoro ?? roomData?.pomodoro ?? DEFAULT_POMODORO;
+    const focusLen = settings.focusMinutes * 60;
+    const breakLen = settings.breakMinutes * 60;
     let next: PomodoroState;
     if (action === 'toggle') {
       if (current.isActive) {
         next = { ...current, timeLeft: displayTimeLeft, isActive: false, endsAt: null };
       } else {
         const left =
-          current.timeLeft > 0 ? current.timeLeft : current.mode === 'focus' ? 25 * 60 : 5 * 60;
+          current.timeLeft > 0 ? current.timeLeft : current.mode === 'focus' ? focusLen : breakLen;
         next = { ...current, timeLeft: left, isActive: true, endsAt: Date.now() + left * 1000 };
       }
     } else if (action === 'reset') {
       next = {
         mode: current.mode,
-        timeLeft: current.mode === 'focus' ? 25 * 60 : 5 * 60,
+        timeLeft: current.mode === 'focus' ? focusLen : breakLen,
         isActive: false,
         endsAt: null,
       };
     } else if (action === 'focus') {
-      next = { mode: 'focus', timeLeft: 25 * 60, isActive: false, endsAt: null };
+      next = { mode: 'focus', timeLeft: focusLen, isActive: false, endsAt: null };
     } else {
-      next = { mode: 'break', timeLeft: 5 * 60, isActive: false, endsAt: null };
+      next = { mode: 'break', timeLeft: breakLen, isActive: false, endsAt: null };
     }
-    lastPushRef.current = { state: next, reconciled: false, at: Date.now() };
+    lastPushRef.current = { pomodoro: next, settings, reconciled: false, at: Date.now() };
     if (store) {
       store.setPomodoro(next);
     } else {
@@ -256,6 +269,48 @@ export default function CoStudyRoomPage() {
     }
     setPomodoroNow(Date.now());
     costudyApi.performAction('sync', roomId, user.id, { pomodoro: next }).catch(() => {
+      toast({
+        title: 'Không đồng bộ được Pomodoro',
+        description: 'Thay đổi đã áp dụng. Vui lòng kiểm tra kết nối.',
+        variant: 'destructive',
+      });
+    });
+  };
+
+  // Anyone may adjust the shared session lengths. Changing them resets the
+  // clock to a fresh (paused) focus session so everyone stays consistent.
+  const handleSettingsChange = (focusMinutes: number, breakMinutes: number) => {
+    if (!roomId || !user) return;
+    const nextSettings: CoStudySettings = {
+      focusMinutes: Math.min(180, Math.max(5, Math.round(focusMinutes))),
+      breakMinutes: Math.min(60, Math.max(5, Math.round(breakMinutes))),
+    };
+    const reset: PomodoroState = {
+      mode: 'focus',
+      timeLeft: nextSettings.focusMinutes * 60,
+      isActive: false,
+      endsAt: null,
+    };
+    lastPushRef.current = { pomodoro: reset, settings: nextSettings, reconciled: false, at: Date.now() };
+    if (store) {
+      store.setSettings(nextSettings);
+      store.setPomodoro(reset);
+    } else {
+      setRoomData((prev) => (prev ? { ...prev, settings: nextSettings, pomodoro: reset } : prev));
+    }
+    costudyApi
+      .performAction('settings', roomId, user.id, {
+        focusMinutes: nextSettings.focusMinutes,
+        breakMinutes: nextSettings.breakMinutes,
+      })
+      .catch(() => {
+        toast({
+          title: 'Không lưu được thời lượng',
+          description: 'Thay đổi đã áp dụng. Vui lòng kiểm tra kết nối.',
+          variant: 'destructive',
+        });
+      });
+    costudyApi.performAction('sync', roomId, user.id, { pomodoro: reset }).catch(() => {
       toast({
         title: 'Không đồng bộ được Pomodoro',
         description: 'Thay đổi đã áp dụng. Vui lòng kiểm tra kết nối.',
@@ -381,7 +436,9 @@ export default function CoStudyRoomPage() {
             <VideoCallPanel call={call} presence={snapshot.presence} currentUserId={user.id} />
             <CoStudyPomodoro
               state={{ timeLeft: displayTimeLeft, isActive: pomodoro.isActive, mode: pomodoro.mode }}
+              settings={settings}
               onAction={pomodoroAction}
+              onSettingsChange={handleSettingsChange}
             />
             <Card className="rounded-2xl shadow-fm-sm">
               <CardContent className="p-4 space-y-2">

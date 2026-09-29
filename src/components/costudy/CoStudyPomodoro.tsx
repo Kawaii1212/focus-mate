@@ -1,16 +1,18 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Pause, Play, RotateCcw } from 'lucide-react';
-import { PomodoroState } from '@/types';
+import { Minus, Pause, Play, Plus, RotateCcw } from 'lucide-react';
+import { CoStudySettings, PomodoroState } from '@/types';
 
 interface CoStudyPomodoroProps {
   state: PomodoroState;
+  settings: CoStudySettings;
   onAction: (action: 'toggle' | 'reset' | 'focus' | 'break') => void;
+  onSettingsChange: (focusMinutes: number, breakMinutes: number) => void;
 }
 
-export default function CoStudyPomodoro({ state, onAction }: CoStudyPomodoroProps) {
-  const totalTime = state.mode === 'focus' ? 25 * 60 : 5 * 60;
-  const pct = Math.min(100, ((totalTime - state.timeLeft) / totalTime) * 100);
+export default function CoStudyPomodoro({ state, settings, onAction, onSettingsChange }: CoStudyPomodoroProps) {
+  const totalTime = state.mode === 'focus' ? settings.focusMinutes * 60 : settings.breakMinutes * 60;
+  const pct = Math.max(0, Math.min(100, ((totalTime - state.timeLeft) / totalTime) * 100));
 
   const radius = 70;
   const circumference = 2 * Math.PI * radius;
@@ -86,6 +88,68 @@ export default function CoStudyPomodoro({ state, onAction }: CoStudyPomodoroProp
           <Button size="icon" variant="outline" onClick={() => onAction('reset')} className="rounded-full w-12 h-12 shadow-sm">
             <RotateCcw className="w-5 h-5 text-muted-foreground" />
           </Button>
+        </div>
+
+        <div className="w-full space-y-2 pt-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs text-muted-foreground">Tập trung</span>
+            <span className="flex items-center gap-1.5">
+              <Button
+                size="icon"
+                variant="outline"
+                className="w-7 h-7 rounded-lg"
+                disabled={settings.focusMinutes <= 5}
+                onClick={() => onSettingsChange(settings.focusMinutes - 5, settings.breakMinutes)}
+                title="Giảm 5 phút"
+              >
+                <Minus className="w-3.5 h-3.5" />
+              </Button>
+              <span className="w-12 text-center text-xs font-semibold text-foreground">
+                {settings.focusMinutes}p
+              </span>
+              <Button
+                size="icon"
+                variant="outline"
+                className="w-7 h-7 rounded-lg"
+                disabled={settings.focusMinutes >= 180}
+                onClick={() => onSettingsChange(settings.focusMinutes + 5, settings.breakMinutes)}
+                title="Tăng 5 phút"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </Button>
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs text-muted-foreground">Giải lao</span>
+            <span className="flex items-center gap-1.5">
+              <Button
+                size="icon"
+                variant="outline"
+                className="w-7 h-7 rounded-lg"
+                disabled={settings.breakMinutes <= 5}
+                onClick={() => onSettingsChange(settings.focusMinutes, settings.breakMinutes - 5)}
+                title="Giảm 5 phút"
+              >
+                <Minus className="w-3.5 h-3.5" />
+              </Button>
+              <span className="w-12 text-center text-xs font-semibold text-foreground">
+                {settings.breakMinutes}p
+              </span>
+              <Button
+                size="icon"
+                variant="outline"
+                className="w-7 h-7 rounded-lg"
+                disabled={settings.breakMinutes >= 60}
+                onClick={() => onSettingsChange(settings.focusMinutes, settings.breakMinutes + 5)}
+                title="Tăng 5 phút"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </Button>
+            </span>
+          </div>
+          <p className="text-[11px] text-muted-foreground text-center">
+            Ai cũng chỉnh được. Đổi thời lượng sẽ đặt lại đồng hồ.
+          </p>
         </div>
       </CardContent>
     </Card>
