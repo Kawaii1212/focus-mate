@@ -79,6 +79,21 @@ export default function CoStudyRoomPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, roomId, user?.id]);
 
+  // Realtime channel: presence, pomodoro broadcasts, chat/call signaling
+  const { store, snapshot } = useCoStudyRoom({
+    roomId,
+    userId: user?.id ?? '',
+    name: user?.name ?? '',
+    mascotPersonaId: mascot?.personaId ?? 0,
+    enabled: loadState === 'ready' && Boolean(user && mascot && roomId),
+    initialPomodoro: roomData?.pomodoro ?? DEFAULT_POMODORO,
+  });
+
+  // Giữ store mới nhất cho các callback async (join/leave) mà không cần
+  // đưa store vào deps gây re-run effect.
+  const storeRef = useRef(store);
+  storeRef.current = store;
+
   // Register membership in the room roster
   useEffect(() => {
     if (loadState !== 'ready' || !roomId || !user || !mascot) return;
@@ -91,6 +106,10 @@ export default function CoStudyRoomPage() {
       .then((fresh) => {
         if (cancelled) return;
         setRoomData(fresh);
+        // Server có thể vừa reset về focus 25p vì phòng đã idle trước khi
+        // mình vào — đẩy ngay vào store để không phải chờ poll 30s.
+        storeRef.current?.applyPomodoro(fresh.pomodoro);
+        storeRef.current?.applySettings(fresh.settings);
       })
       .catch((error) => {
         if (cancelled) return;
@@ -105,15 +124,15 @@ export default function CoStudyRoomPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadState, roomId, user?.id, mascot?.personaId]);
 
-  // Realtime channel: presence, pomodoro broadcasts, chat/call signaling
-  const { store, snapshot } = useCoStudyRoom({
-    roomId,
-    userId: user?.id ?? '',
-    name: user?.name ?? '',
-    mascotPersonaId: mascot?.personaId ?? 0,
-    enabled: loadState === 'ready' && Boolean(user && mascot && roomId),
-    initialPomodoro: roomData?.pomodoro ?? DEFAULT_POMODORO,
-  });
+  // Khi store realtime vừa sẵn sàng, đồng bộ ngay pomodoro/settings mới nhất
+  // từ REST (join response có thể đã reset về focus 25p sau thời gian idle).
+  const storeReadyAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!store || !roomData || storeReadyAppliedRef.current) return;
+    storeReadyAppliedRef.current = true;
+    store.applyPomodoro(roomData.pomodoro);
+    store.applySettings(roomData.settings);
+  }, [store, roomData]);
 
   const call = useGroupCall({ store, snapshot, user });
 
@@ -320,6 +339,31 @@ export default function CoStudyRoomPage() {
   const handleLeaveRoom = async () => {
     call.leaveCall();
     if (roomId && user) {
+      // Nếu mình là người online cuối cùng (presence chỉ còn mình), reset
+      // đồng hồ về focus 25p pause trước khi rời để người vào sau thấy
+      // session mới. Trường hợp tắt tab đột ngột (beacon) thì server tự
+      // reset ở action 'leave' khi các member còn lại đều stale.
+      const presenceCount = Object.keys(snapshot.presence).length;
+      const amLastOnline =
+        Boolean(store) && Boolean(snapshot.presence[user.id]) && presenceCount <= 1;
+      if (amLastOnline) {
+        const reset: PomodoroState = {
+          mode: 'focus',
+          timeLeft: 25 * 60,
+          isActive: false,
+          endsAt: null,
+        };
+        try {
+          storeRef.current?.setPomodoro(reset);
+        } catch {
+          // best-effort broadcast
+        }
+        try {
+          await costudyApi.performAction('sync', roomId, user.id, { pomodoro: reset });
+        } catch {
+          // best-effort — server vẫn reset ở bước 'leave' nếu phòng idle
+        }
+      }
       try {
         await costudyApi.performAction('leave', roomId, user.id);
       } catch {
