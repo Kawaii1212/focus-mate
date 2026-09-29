@@ -1,4 +1,6 @@
-import { ChatMessage, CoStudyMember, MascotPersonaId, PomodoroState } from '@/types';
+import { ChatMessage, CoStudyMember, CoStudySettings, MascotPersonaId, PomodoroState } from '@/types';
+
+export const DEFAULT_SETTINGS: CoStudySettings = { focusMinutes: 25, breakMinutes: 5 };
 
 export interface CoStudyRoomData {
   id: string;
@@ -8,6 +10,7 @@ export interface CoStudyRoomData {
   checkInIntervalMinutes: number;
   sharedMinutes: number;
   pomodoro: PomodoroState;
+  settings: CoStudySettings;
   members: Record<string, CoStudyMember>;
 }
 
@@ -43,6 +46,27 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+/**
+ * Pure transition: what the shared pomodoro becomes when the current phase
+ * hits zero. Deterministic so simultaneous actors converge on the same state.
+ */
+export function nextPomodoroAfterFinish(
+  mode: 'focus' | 'break',
+  settings: CoStudySettings
+): PomodoroState {
+  const nextMode = mode === 'focus' ? 'break' : 'focus';
+  const minutes = nextMode === 'focus' ? settings.focusMinutes : settings.breakMinutes;
+  return { timeLeft: minutes * 60, mode: nextMode, isActive: false, endsAt: null };
+}
+
+/** Wall-clock display value: counts down to `endsAt` while running. */
+export function pomodoroDisplayTimeLeft(pomodoro: PomodoroState, now: number): number {
+  if (pomodoro.isActive && typeof pomodoro.endsAt === 'number' && pomodoro.endsAt > 0) {
+    return Math.max(0, Math.ceil((pomodoro.endsAt - now) / 1000));
+  }
+  return pomodoro.timeLeft;
+}
+
 export const costudyApi = {
   getRoom: (roomId: string): Promise<CoStudyRoomData> =>
     request<CoStudyRoomData>(`/api/costudy/rooms/${roomId}`),
@@ -54,7 +78,7 @@ export const costudyApi = {
     }),
 
   performAction: (
-    action: 'join' | 'leave' | 'status' | 'sync' | 'poll',
+    action: 'join' | 'leave' | 'status' | 'sync' | 'poll' | 'settings',
     roomId: string,
     userId: string,
     extra: {
@@ -62,6 +86,8 @@ export const costudyApi = {
       mascotPersonaId?: MascotPersonaId;
       status?: string;
       pomodoro?: PomodoroState;
+      focusMinutes?: number;
+      breakMinutes?: number;
     } = {}
   ): Promise<CoStudyRoomData> =>
     request<CoStudyRoomData>('/api/costudy/action', {

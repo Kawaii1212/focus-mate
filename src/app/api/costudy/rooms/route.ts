@@ -54,6 +54,10 @@ export async function POST(request: Request) {
         mode: newRoom.pomodoroMode,
         endsAt: newRoom.pomodoroEndsAt ? newRoom.pomodoroEndsAt.getTime() : null,
       },
+      settings: {
+        focusMinutes: newRoom.focusMinutes,
+        breakMinutes: newRoom.breakMinutes,
+      },
       members: newRoom.members.reduce((acc, m) => ({ ...acc, [m.id]: m }), {})
     });
   } catch (error) {

@@ -2,9 +2,21 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
 export async function POST(request: Request) {
+  // Parse defensively: some clients (e.g. sendBeacon on unload) may deliver
+  // an empty or non-JSON body, which must be a 400 — never a 500.
+  let body: Record<string, any> | null = null;
   try {
-    const body = await request.json();
-    const { action, roomId, userId, name, mascotPersonaId, status, pomodoro } = body;
+    const text = await request.text();
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = null;
+  }
+  if (!body || typeof body !== 'object') {
+    return NextResponse.json({ message: 'Invalid request body' }, { status: 400 });
+  }
+
+  try {
+    const { action, roomId, userId, name, mascotPersonaId, status, pomodoro, focusMinutes, breakMinutes } = body;
 
     const room = await prisma.activeRoom.findUnique({ where: { id: roomId } });
     if (!room) return NextResponse.json({ message: "Room not found" }, { status: 404 });
@@ -68,6 +80,14 @@ export async function POST(request: Request) {
           pomodoroEndsAt: endsAt
         }
       });
+    } else if (action === 'settings') {
+      // Anyone in the room may adjust the shared session lengths.
+      const nextFocus = Math.min(180, Math.max(5, Math.floor(Number(focusMinutes) || 25)));
+      const nextBreak = Math.min(60, Math.max(5, Math.floor(Number(breakMinutes) || 5)));
+      await prisma.activeRoom.update({
+        where: { id: roomId },
+        data: { focusMinutes: nextFocus, breakMinutes: nextBreak }
+      });
     } else if (action === 'poll') {
       // Just returning the room state below
     }
@@ -87,6 +107,10 @@ export async function POST(request: Request) {
         isActive: updatedRoom.pomodoroIsActive,
         mode: updatedRoom.pomodoroMode,
         endsAt: updatedRoom.pomodoroEndsAt ? updatedRoom.pomodoroEndsAt.getTime() : null
+      },
+      settings: {
+        focusMinutes: updatedRoom.focusMinutes,
+        breakMinutes: updatedRoom.breakMinutes
       },
       members: updatedRoom.members.reduce((acc, m) => ({ ...acc, [m.id]: m }), {})
     });

@@ -151,6 +151,12 @@ export interface PomodoroState {
   endsAt?: number | null;
 }
 
+/** Shared room pomodoro lengths (minutes). Any member may adjust them. */
+export interface CoStudySettings {
+  focusMinutes: number;
+  breakMinutes: number;
+}
+
 export interface ChatMessage {
   id: string;
   roomId: string;

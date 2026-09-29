@@ -27,6 +27,10 @@ export async function GET(
         mode: room.pomodoroMode,
         endsAt: room.pomodoroEndsAt ? room.pomodoroEndsAt.getTime() : null,
       },
+      settings: {
+        focusMinutes: room.focusMinutes,
+        breakMinutes: room.breakMinutes,
+      },
       members: room.members.reduce((acc, m) => ({ ...acc, [m.id]: m }), {}),
     });
   } catch (error) {

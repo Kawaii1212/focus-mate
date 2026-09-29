@@ -68,7 +68,7 @@
 | POST | `/api/costudy/rooms/[roomId]/messages` | `src/app/api/costudy/rooms/[roomId]/messages/route.ts` | Send a room chat message: text (≤500 chars), replies, image/file data URLs (≤300KB) |
 | GET | `/api/costudy/rooms/[roomId]/reactions` | `src/app/api/costudy/rooms/[roomId]/reactions/route.ts` | List room message reactions |
 | POST | `/api/costudy/rooms/[roomId]/reactions` | `src/app/api/costudy/rooms/[roomId]/reactions/route.ts` | Toggle a reaction on a message |
-| POST | `/api/costudy/action` | `src/app/api/costudy/action/route.ts` | Room actions: join (enforces `maxMembers`, 409 when full), leave (reassigns host to lowest remaining user id), poll, status, sync (any member may write the shared pomodoro) |
+| POST | `/api/costudy/action` | `src/app/api/costudy/action/route.ts` | Room actions: join (enforces `maxMembers`, 409 when full), leave (reassigns host to lowest remaining user id), poll, status, sync + settings (any member may write the shared pomodoro/durations) |
 
 ---
 
@@ -101,7 +101,7 @@
 | ParticipantsPanel | `src/components/costudy/ParticipantsPanel.tsx` | Live participant list with presence states (ONLINE/STUDYING/AWAY/OFFLINE/IN_VIDEO_CALL) and mic/camera flags |
 | ChatPanel | `src/components/costudy/ChatPanel.tsx` | Shared room chat: history, timestamps, avatars, typing indicators, unread count, auto-scroll, replies, image/file messages, emoji reactions |
 | VideoCallPanel | `src/components/costudy/VideoCallPanel.tsx` | Group video call: responsive tile grid, mic/camera controls, join/leave call |
-| CoStudyPomodoro | `src/components/costudy/CoStudyPomodoro.tsx` | Shared pomodoro ring (any member controls, wall-clock countdown, works with REST fallback when realtime is unavailable) |
+| CoStudyPomodoro | `src/components/costudy/CoStudyPomodoro.tsx` | Shared pomodoro ring (any member controls, adjustable focus/break lengths, auto-switch focus<->break, wall-clock countdown, works with REST fallback when realtime is unavailable) |
 
 ---
 
