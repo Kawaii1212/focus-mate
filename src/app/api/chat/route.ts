@@ -15,8 +15,8 @@ export async function POST(req: Request) {
       system: "You are a helpful and polite AI assistant built into the application."
     });
 
-    return result.toUIMessageStreamResponse({
-      onError: (error: any) => {
+    return result.toDataStreamResponse({
+      getErrorMessage: (error: any) => {
         console.error("Stream Error:", error);
         return error?.message || String(error) || "An error occurred while generating the response.";
       },
