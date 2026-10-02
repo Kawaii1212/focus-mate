@@ -16,7 +16,10 @@ export function Chatbot() {
   const [localInput, setLocalInput] = useState('');
   
   // ai-sdk/react v4.0+ signature
-  const { messages, sendMessage, status, error } = useChat() as any;
+  const { messages, sendMessage, status, error, append } = useChat({
+    body: { userId: user?.id },
+    maxSteps: 5 // Allow multi-step tool calls
+  }) as any;
   const isLoading = status === 'submitted' || status === 'streaming';
   
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -76,7 +79,35 @@ export function Chatbot() {
                   </Avatar>
                 )}
                 <div className={`rounded-2xl px-4 py-2.5 max-w-[80%] text-sm shadow-sm ${m.role === 'user' ? 'bg-gradient-to-r from-sky to-primary text-white rounded-br-sm' : 'bg-card/80 backdrop-blur border-border/50 text-card-foreground rounded-bl-sm'}`}>
-                  {m.content || (m.parts ? m.parts.map((p: any) => p.text).join('') : JSON.stringify(m))}
+                  {m.content && m.content}
+                  
+                  {/* Handle tool calls UI */}
+                  {m.toolInvocations?.map((toolInvocation: any) => {
+                    const toolCallId = toolInvocation.toolCallId;
+                    const result = toolInvocation.result;
+                    if (toolInvocation.toolName === 'schedule_study_blocks') {
+                      return (
+                        <div key={toolCallId} className="mt-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                          {result ? (
+                            <div className="flex flex-col gap-1">
+                              <span className="font-semibold text-primary flex items-center gap-2">
+                                <Sparkles size={14} /> Hoàn tất lưu lịch!
+                              </span>
+                              <span className="text-xs opacity-80">{result}</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-primary font-medium">
+                              <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                              <span className="text-xs">Đang đồng bộ với AI Planner...</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+                  
+                  {(!m.content && !m.toolInvocations) && (m.parts ? m.parts.map((p: any) => p.text).join('') : JSON.stringify(m))}
                 </div>
               </div>
             ))}
