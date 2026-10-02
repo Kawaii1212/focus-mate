@@ -85,7 +85,8 @@ type Action =
   | { type: 'ADD_STREAK_SHIELD'; payload: number }
   | { type: 'SET_PREMIUM'; payload: { isPremium: boolean; premiumExpiry: string | null } }
   | { type: 'RENEW_SHIELDS' }
-  | { type: 'CHANGE_PERSONA'; payload: { personaId: MascotPersonaId; name?: string } };
+  | { type: 'CHANGE_PERSONA'; payload: { personaId: MascotPersonaId; name?: string } }
+  | { type: 'ADD_PLANNER_BLOCKS'; payload: PlannerBlock[] };
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
@@ -260,6 +261,15 @@ function reducer(state: AppState, action: Action): AppState {
           generatedPlan: state.plannerState.generatedPlan.map((b) =>
             b.id === action.payload ? { ...b, status: 'completed' } : b
           ),
+        },
+      };
+
+    case 'ADD_PLANNER_BLOCKS':
+      return {
+        ...state,
+        plannerState: {
+          ...state.plannerState,
+          generatedPlan: [...state.plannerState.generatedPlan, ...action.payload],
         },
       };
 

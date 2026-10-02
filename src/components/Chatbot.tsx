@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
-import { useUser } from '@/store/AppContext';
+import { useApp } from '@/store/AppContext';
 
 export function Chatbot() {
-  const user = useUser();
+  const { state: appState, dispatch } = useApp();
+  const user = appState.user;
   const [isOpen, setIsOpen] = useState(false);
   const [localInput, setLocalInput] = useState('');
   
@@ -23,12 +24,26 @@ export function Chatbot() {
   const isLoading = status === 'submitted' || status === 'streaming';
   
   const scrollRef = useRef<HTMLDivElement>(null);
+  const dispatchedToolCalls = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    messages.forEach((m: any) => {
+      m.toolInvocations?.forEach((t: any) => {
+        if (t.toolName === 'schedule_study_blocks' && t.result?.success) {
+          if (!dispatchedToolCalls.current.has(t.toolCallId)) {
+            dispatchedToolCalls.current.add(t.toolCallId);
+            dispatch({ type: 'ADD_PLANNER_BLOCKS', payload: t.result.blocks });
+          }
+        }
+      });
+    });
+  }, [messages, dispatch]);
 
   // Return null if not logged in (must be after all hooks)
   if (!user) return null;
@@ -93,7 +108,7 @@ export function Chatbot() {
                               <span className="font-semibold text-primary flex items-center gap-2">
                                 <Sparkles size={14} /> Hoàn tất lưu lịch!
                               </span>
-                              <span className="text-xs opacity-80">{result}</span>
+                              <span className="text-xs opacity-80">{typeof result === 'string' ? result : result.message || 'Thành công'}</span>
                             </div>
                           ) : (
                             <div className="flex items-center gap-2 text-primary font-medium">

@@ -15,7 +15,8 @@ export async function POST(req: Request) {
       messages,
       system: `You are Focus Mate AI, a helpful and polite AI assistant built into the application.
 When a user asks for a study plan, schedule, or advice on time management, you should generate a schedule and AUTOMATICALLY use the 'schedule_study_blocks' tool to save the plan directly to their AI Planner account.
-You do NOT need to ask for their permission first. Always call the tool immediately when you suggest a schedule, and then inform them that you have automatically added it to their AI Planner.`,
+You do NOT need to ask for their permission first. Always call the tool immediately when you suggest a schedule, and then inform them that you have automatically added it to their AI Planner.
+CRITICAL INSTRUCTION: You MUST actually execute the 'schedule_study_blocks' tool. Do NOT just write text claiming you saved it. If you generate a schedule, you MUST call the tool.`,
       tools: {
         schedule_study_blocks: {
           description: 'Save study blocks to the user\'s AI Planner',
@@ -30,7 +31,7 @@ You do NOT need to ask for their permission first. Always call the tool immediat
           }),
           execute: async ({ blocks }) => {
             if (!userId) {
-              return "Error: User is not logged in. Cannot save schedule.";
+              return { error: "User is not logged in." };
             }
             try {
               const createdBlocks = await Promise.all(
@@ -48,9 +49,30 @@ You do NOT need to ask for their permission first. Always call the tool immediat
                   })
                 )
               );
-              return `Successfully scheduled ${createdBlocks.length} study blocks! Tell the user they can see it in their AI Planner.`;
+              
+              const formattedBlocks = createdBlocks.map(b => {
+                const [sh, sm] = b.startTime.split(':').map(Number);
+                const [eh, em] = b.endTime.split(':').map(Number);
+                const durationMinutes = (eh * 60 + em) - (sh * 60 + sm);
+                
+                return {
+                  id: b.id,
+                  deadlineId: b.relatedDeadlineId || "ai-generated",
+                  taskName: b.title,
+                  date: b.date.toISOString().split('T')[0],
+                  startTime: b.startTime,
+                  endTime: b.endTime,
+                  durationMinutes,
+                  explanation: "Lịch do AI sắp xếp",
+                  status: b.status,
+                  urgencyScore: 5,
+                  isBuffer: false
+                };
+              });
+
+              return { success: true, message: `Successfully scheduled ${createdBlocks.length} study blocks!`, blocks: formattedBlocks };
             } catch (error: any) {
-              return `Error saving blocks: ${error.message}`;
+              return { error: `Error saving blocks: ${error.message}` };
             }
           }
         }
