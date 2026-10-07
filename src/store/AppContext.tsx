@@ -264,14 +264,17 @@ function reducer(state: AppState, action: Action): AppState {
         },
       };
 
-    case 'ADD_PLANNER_BLOCKS':
+    case 'ADD_PLANNER_BLOCKS': {
+      const existingIds = new Set(state.plannerState.generatedPlan.map((b) => b.id));
+      const newBlocks = action.payload.filter((b) => !existingIds.has(b.id));
       return {
         ...state,
         plannerState: {
           ...state.plannerState,
-          generatedPlan: [...state.plannerState.generatedPlan, ...action.payload],
+          generatedPlan: [...state.plannerState.generatedPlan, ...newBlocks],
         },
       };
+    }
 
     case 'BUY_ITEM': {
       if (!state.mascot || state.mascot.coin < action.payload.price) return state;

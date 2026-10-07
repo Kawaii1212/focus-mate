@@ -2,7 +2,8 @@
 
 import { useChat } from '@ai-sdk/react';
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Bot, User, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Sparkles, Calendar, CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -15,14 +16,14 @@ export function Chatbot() {
   const user = appState.user;
   const [isOpen, setIsOpen] = useState(false);
   const [localInput, setLocalInput] = useState('');
-  
+
   // ai-sdk/react v4.0+ signature
-  const { messages, sendMessage, status, error, append } = useChat({
+  const { messages, sendMessage, status, error, append } = (useChat as any)({
     body: { userId: user?.id },
     maxSteps: 5 // Allow multi-step tool calls
-  }) as any;
+  });
   const isLoading = status === 'submitted' || status === 'streaming';
-  
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const dispatchedToolCalls = useRef<Set<string>>(new Set());
 
@@ -59,16 +60,16 @@ export function Chatbot() {
               </div>
               Focus Mate AI
             </CardTitle>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 text-white hover:bg-white/20 hover:text-white rounded-full transition-colors" 
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-white hover:bg-white/20 hover:text-white rounded-full transition-colors"
               onClick={() => setIsOpen(false)}
             >
               <X size={18} />
             </Button>
           </CardHeader>
-          
+
           <CardContent className="flex-1 overflow-y-auto p-4 space-y-5 bg-background/40 backdrop-blur-sm" ref={scrollRef}>
             {error && (
               <div className="p-3 bg-destructive/10 text-destructive border border-destructive/20 rounded-xl text-sm text-center animate-fade-in">
@@ -93,27 +94,52 @@ export function Chatbot() {
                     <AvatarFallback className="bg-transparent"><Bot size={16} className="text-primary" /></AvatarFallback>
                   </Avatar>
                 )}
-                <div className={`rounded-2xl px-4 py-2.5 max-w-[80%] text-sm shadow-sm ${m.role === 'user' ? 'bg-gradient-to-r from-sky to-primary text-white rounded-br-sm' : 'bg-card/80 backdrop-blur border-border/50 text-card-foreground rounded-bl-sm'}`}>
+                <div className={`rounded-2xl px-4 py-2.5 max-w-[85%] text-sm shadow-sm ${m.role === 'user' ? 'bg-gradient-to-r from-sky to-primary text-white rounded-br-sm' : 'bg-card/80 backdrop-blur border-border/50 text-card-foreground rounded-bl-sm'}`}>
                   {m.content && m.content}
-                  
+
                   {/* Handle tool calls UI */}
                   {m.toolInvocations?.map((toolInvocation: any) => {
                     const toolCallId = toolInvocation.toolCallId;
                     const result = toolInvocation.result;
                     if (toolInvocation.toolName === 'schedule_study_blocks') {
                       return (
-                        <div key={toolCallId} className="mt-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                        <div key={toolCallId} className="mt-3 p-3 bg-gradient-to-br from-sky/15 to-lilac/15 rounded-xl border border-sky/30 shadow-sm animate-fade-in text-foreground">
                           {result ? (
-                            <div className="flex flex-col gap-1">
-                              <span className="font-semibold text-primary flex items-center gap-2">
-                                <Sparkles size={14} /> Hoàn tất lưu lịch!
-                              </span>
-                              <span className="text-xs opacity-80">{typeof result === 'string' ? result : result.message || 'Thành công'}</span>
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold text-primary flex items-center gap-1.5 text-xs sm:text-sm">
+                                  <Sparkles size={16} className="text-sky animate-pulse" />
+                                  Đã tự động thêm vào AI Planner!
+                                </span>
+                                {result.blocks && (
+                                  <span className="text-[11px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">
+                                    {result.blocks.length} buổi học
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground">{typeof result === 'string' ? result : result.message || 'Lịch học đã được sắp xếp thành công.'}</p>
+                              {result.blocks && result.blocks.length > 0 && (
+                                <div className="space-y-1.5 my-1 max-h-36 overflow-y-auto pr-1">
+                                  {result.blocks.map((b: any, idx: number) => (
+                                    <div key={b.id || idx} className="text-xs p-2 bg-background/80 rounded-lg border border-border/50 flex justify-between items-center gap-2">
+                                      <span className="font-medium truncate max-w-[160px]">{b.taskName}</span>
+                                      <span className="text-[11px] text-muted-foreground shrink-0">{b.date} ({b.startTime})</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <Link
+                                href="/planner"
+                                onClick={() => setIsOpen(false)}
+                                className="inline-flex items-center justify-center gap-1.5 mt-1 text-xs font-semibold text-white bg-gradient-to-r from-sky to-primary py-2 px-3 rounded-lg hover:opacity-95 transition-all shadow-sm"
+                              >
+                                <Calendar size={14} /> Xem trên AI Planner
+                              </Link>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2 text-primary font-medium">
-                              <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                              <span className="text-xs">Đang đồng bộ với AI Planner...</span>
+                            <div className="flex items-center gap-2 text-primary font-medium py-1">
+                              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                              <span className="text-xs">Đang tự động xếp lịch vào AI Planner...</span>
                             </div>
                           )}
                         </div>
@@ -121,7 +147,7 @@ export function Chatbot() {
                     }
                     return null;
                   })}
-                  
+
                   {(!m.content && !m.toolInvocations) && (m.parts ? m.parts.map((p: any) => p.text).join('') : JSON.stringify(m))}
                 </div>
               </div>
@@ -139,15 +165,15 @@ export function Chatbot() {
               </div>
             )}
           </CardContent>
-          
+
           <CardFooter className="p-3 bg-background/60 backdrop-blur-md border-t border-border/50">
-            <form onSubmit={e => { 
+            <form onSubmit={e => {
               e.preventDefault();
               if (!localInput || !localInput.trim()) return;
               try {
                 const messageText = localInput;
                 setLocalInput('');
-                
+
                 if (typeof sendMessage === 'function') {
                   sendMessage({ role: 'user', content: messageText });
                 } else {
@@ -157,17 +183,17 @@ export function Chatbot() {
                 alert("Submit Error: " + err.message);
               }
             }} className="flex w-full gap-2 relative">
-              <Input 
-                value={localInput} 
-                onChange={(e) => setLocalInput(e.target.value)} 
-                placeholder="Hỏi mình bất cứ điều gì..." 
+              <Input
+                value={localInput}
+                onChange={(e) => setLocalInput(e.target.value)}
+                placeholder="Hỏi mình bất cứ điều gì..."
                 className="flex-1 pr-12 rounded-full bg-background/50 border-border/60 focus-visible:ring-primary/50 focus-visible:border-primary/50 shadow-sm transition-all"
                 disabled={isLoading}
               />
-              <Button 
-                type="submit" 
-                size="icon" 
-                className="absolute right-1 top-1 h-8 w-8 rounded-full z-10 bg-gradient-to-r from-sky to-primary text-white hover:opacity-90 transition-opacity" 
+              <Button
+                type="submit"
+                size="icon"
+                className="absolute right-1 top-1 h-8 w-8 rounded-full z-10 bg-gradient-to-r from-sky to-primary text-white hover:opacity-90 transition-opacity"
                 disabled={isLoading || !localInput.trim()}
               >
                 <Send size={14} className="ml-0.5" />
@@ -176,10 +202,10 @@ export function Chatbot() {
           </CardFooter>
         </Card>
       )}
-      
+
       {!isOpen && (
-        <Button 
-          onClick={() => setIsOpen(true)} 
+        <Button
+          onClick={() => setIsOpen(true)}
           className="rounded-full w-14 h-14 p-0 shadow-fm-glow animate-float bg-gradient-to-r from-sky to-lilac text-white hover:scale-105 transition-transform duration-300 border-0"
         >
           <div className="flex items-center justify-center w-full h-full bg-white/10 rounded-full backdrop-blur-sm">

@@ -53,8 +53,38 @@ export default function PlannerPage() {
         dispatch({ type: 'SET_DEADLINES', payload: dls });
       }).catch(console.error);
       
-      plannerApi.getBlocks(appState.user?.id || 'unknown').then(blocks => {
-        // Here we could store blocks, but planner engine generates them locally in MVP.
+      plannerApi.getBlocks(appState.user?.id || 'unknown').then(dbBlocks => {
+        if (dbBlocks && dbBlocks.length > 0) {
+          const formattedBlocks: PlannerBlock[] = dbBlocks.map((b: any) => {
+            const [sh, sm] = (b.startTime || '08:00').split(':').map(Number);
+            const [eh, em] = (b.endTime || '09:30').split(':').map(Number);
+            const durationMinutes = (!isNaN(sh) && !isNaN(eh)) ? Math.max(15, (eh * 60 + em) - (sh * 60 + sm)) : 60;
+            
+            let dateStr = new Date().toISOString().split('T')[0];
+            if (b.date) {
+              if (typeof b.date === 'string') {
+                dateStr = b.date.split('T')[0];
+              } else {
+                dateStr = new Date(b.date).toISOString().split('T')[0];
+              }
+            }
+
+            return {
+              id: b.id,
+              deadlineId: b.relatedDeadlineId || 'ai-generated',
+              taskName: b.title || (b as any).taskName || 'Buổi học',
+              date: dateStr,
+              startTime: b.startTime || '08:00',
+              endTime: b.endTime || '09:30',
+              durationMinutes,
+              explanation: (b as any).explanation || 'Lịch học do AI tự động xếp',
+              status: b.status || 'pending',
+              urgencyScore: 5,
+              isBuffer: false
+            };
+          });
+          dispatch({ type: 'ADD_PLANNER_BLOCKS', payload: formattedBlocks });
+        }
       }).catch(console.error);
     }
   }, [appState.user, dispatch]);
@@ -254,6 +284,33 @@ export default function PlannerPage() {
                   {generating ? 'Đang tạo kế hoạch...' : 'Tạo kế hoạch tuần'}
                 </Button>
               </>
+            )}
+
+            {plan.length > 0 && (
+              <Card className="rounded-2xl shadow-fm-sm mt-4">
+                <CardHeader className="pb-3 flex flex-row items-center justify-between space-y-0">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-sky" />
+                    Lịch học đã sắp xếp ({plan.length} phiên)
+                  </CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => setActiveTab('calendar')} className="rounded-xl text-xs">
+                    Xem Lịch Tuần
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-2 max-h-60 overflow-y-auto">
+                  {plan.map((b, idx) => (
+                    <div key={b.id || idx} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 text-xs">
+                      <div>
+                        <p className="font-semibold text-sm text-foreground">{b.taskName}</p>
+                        <p className="text-muted-foreground">{b.date} · {b.startTime} - {b.endTime} ({b.durationMinutes} phút)</p>
+                      </div>
+                      <Badge variant={b.status === 'completed' ? 'default' : 'secondary'} className="rounded-lg">
+                        {b.status === 'completed' ? 'Đã xong' : 'Chờ học'}
+                      </Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
 
