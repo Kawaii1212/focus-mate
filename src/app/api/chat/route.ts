@@ -32,9 +32,27 @@ YOU MUST AUTOMATICALLY EXECUTE THE 'schedule_study_blocks' TOOL!
 - DO NOT just write plain text saying you saved it—you MUST actually call the 'schedule_study_blocks' tool in your turn.
 - In your response text, confirm cheerfully to the user that you have automatically added the study sessions to their AI Planner!`;
 
+    // Clean up UI-specific properties (id, toolInvocations, etc.) from messages before passing to AI SDK
+    const sanitizedMessages = (messages || [])
+      .filter((m: any) => m && (m.role === 'user' || m.role === 'assistant' || m.role === 'system'))
+      .map((m: any) => {
+        let textContent = '';
+        if (typeof m.content === 'string') {
+          textContent = m.content;
+        } else if (Array.isArray(m.parts)) {
+          textContent = m.parts.map((p: any) => (typeof p === 'string' ? p : p.text || '')).join('');
+        } else if (m.content) {
+          textContent = String(m.content);
+        }
+        return {
+          role: m.role,
+          content: textContent || ' ',
+        };
+      });
+
     const result = await (streamText as any)({
       model: google('gemini-3.5-flash-lite'),
-      messages,
+      messages: sanitizedMessages,
       system: systemPrompt,
       tools: {
         schedule_study_blocks: tool({
