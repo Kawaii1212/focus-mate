@@ -33,7 +33,7 @@ YOU MUST AUTOMATICALLY EXECUTE THE 'schedule_study_blocks' TOOL!
 - In your response text, confirm cheerfully to the user that you have automatically added the study sessions to their AI Planner!`;
 
     const result = await (streamText as any)({
-      model: google('gemini-1.5-flash'),
+      model: google('gemini-3.5-flash-lite'),
       messages,
       system: systemPrompt,
       tools: {
