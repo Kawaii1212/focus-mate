@@ -87,15 +87,23 @@ export function Chatbot() {
                 </div>
               </div>
             )}
-            {(messages || []).map((m: any) => (
-              <div key={m.id || Math.random().toString()} className={`flex gap-3 animate-fade-in ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {m.role !== 'user' && (
-                  <Avatar className="w-8 h-8 border-0 bg-gradient-to-br from-sky/20 to-lilac/20 shrink-0 mt-1 shadow-sm">
-                    <AvatarFallback className="bg-transparent"><Bot size={16} className="text-primary" /></AvatarFallback>
-                  </Avatar>
-                )}
-                <div className={`rounded-2xl px-4 py-2.5 max-w-[85%] text-sm shadow-sm ${m.role === 'user' ? 'bg-gradient-to-r from-sky to-primary text-white rounded-br-sm' : 'bg-card/80 backdrop-blur border-border/50 text-card-foreground rounded-bl-sm'}`}>
-                  {m.content && m.content}
+            {(messages || []).map((m: any) => {
+              const textContent = m.content || (m.parts ? m.parts.map((p: any) => (typeof p === 'string' ? p : p.text || '')).join('') : '');
+              const hasTools = m.toolInvocations && m.toolInvocations.length > 0;
+
+              if (m.role !== 'user' && !textContent && !hasTools) {
+                return null;
+              }
+
+              return (
+                <div key={m.id || Math.random().toString()} className={`flex gap-3 animate-fade-in ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {m.role !== 'user' && (
+                    <Avatar className="w-8 h-8 border-0 bg-gradient-to-br from-sky/20 to-lilac/20 shrink-0 mt-1 shadow-sm">
+                      <AvatarFallback className="bg-transparent"><Bot size={16} className="text-primary" /></AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div className={`rounded-2xl px-4 py-2.5 max-w-[85%] text-sm shadow-sm ${m.role === 'user' ? 'bg-gradient-to-r from-sky to-primary text-white rounded-br-sm' : 'bg-card/80 backdrop-blur border-border/50 text-card-foreground rounded-bl-sm'}`}>
+                    {textContent && <div className="whitespace-pre-wrap leading-relaxed">{textContent}</div>}
 
                   {/* Handle tool calls UI */}
                   {m.toolInvocations?.map((toolInvocation: any) => {
@@ -148,10 +156,10 @@ export function Chatbot() {
                     return null;
                   })}
 
-                  {(!m.content && !m.toolInvocations) && (m.parts ? m.parts.map((p: any) => p.text).join('') : JSON.stringify(m))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {isLoading && (
               <div className="flex gap-3 justify-start animate-fade-in">
                 <Avatar className="w-8 h-8 border-0 bg-gradient-to-br from-sky/20 to-lilac/20 shrink-0 mt-1 shadow-sm">
