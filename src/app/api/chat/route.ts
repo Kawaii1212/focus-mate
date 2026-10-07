@@ -1,4 +1,4 @@
-import { google } from '@ai-sdk/google';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
@@ -9,6 +9,26 @@ export async function POST(req: Request) {
   try {
     const { messages, userId } = await req.json();
     console.log("Received messages count:", messages?.length, "userId:", userId);
+
+    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || '';
+    
+    // Custom Google Provider that ensures x-goog-api-key header and query parameter work for all key types
+    const googleProvider = createGoogleGenerativeAI({
+      apiKey: apiKey || 'dummy',
+      fetch: async (input, init) => {
+        let urlStr = typeof input === 'string' ? input : (input instanceof Request ? input.url : String(input));
+        if (apiKey && !urlStr.includes('key=')) {
+          urlStr += (urlStr.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(apiKey);
+        }
+        const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : {}));
+        if (apiKey) {
+          headers.set('x-goog-api-key', apiKey);
+          headers.delete('authorization');
+          headers.delete('Authorization');
+        }
+        return fetch(urlStr, { ...init, headers });
+      }
+    });
 
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
@@ -52,7 +72,7 @@ Whenever a user asks for a study plan, weekly schedule, exam prep schedule, or a
       .filter((m: any) => m.content.trim().length > 0 || m.role === 'user');
 
     const result = await (streamText as any)({
-      model: google('gemini-1.5-flash'),
+      model: googleProvider('gemini-1.5-flash'),
       messages: sanitizedMessages,
       system: systemPrompt,
       tools: {
