@@ -52,7 +52,7 @@ Whenever a user asks for a study plan, weekly schedule, exam prep schedule, or a
       .filter((m: any) => m.content.trim().length > 0 || m.role === 'user');
 
     const result = await (streamText as any)({
-      model: google('gemini-3.5-flash-lite'),
+      model: google('gemini-1.5-flash'),
       messages: sanitizedMessages,
       system: systemPrompt,
       tools: {
@@ -139,8 +139,8 @@ Whenever a user asks for a study plan, weekly schedule, exam prep schedule, or a
       maxSteps: 5,
     });
 
-    return result.toDataStreamResponse({
-      getErrorMessage: (error: any) => {
+    return result.toUIMessageStreamResponse({
+      onError: (error: any) => {
         console.error("Stream Error:", error);
         return error?.message || String(error) || "An error occurred while generating response.";
       },
