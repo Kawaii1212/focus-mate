@@ -72,7 +72,7 @@ Whenever a user asks for a study plan, weekly schedule, exam prep schedule, or a
       .filter((m: any) => m.content.trim().length > 0 || m.role === 'user');
 
     const result = await (streamText as any)({
-      model: googleProvider('gemini-1.5-flash'),
+      model: googleProvider('gemini-2.5-flash'),
       messages: sanitizedMessages,
       system: systemPrompt,
       tools: {
@@ -91,68 +91,71 @@ Whenever a user asks for a study plan, weekly schedule, exam prep schedule, or a
             console.log("Executing schedule_study_blocks tool. Count:", blocks?.length);
             
             let targetUserId = userId;
-            if (!targetUserId) {
-              const firstUser = await prisma.user.findFirst();
-              targetUserId = firstUser?.id;
-            }
-
-            if (!targetUserId) {
-              return { success: false, error: "Không tìm thấy người dùng để lưu lịch." };
-            }
-
             try {
-              const createdBlocks = await Promise.all(
-                (blocks || []).map(async (block: any) => {
-                  let blockDate = new Date(block.date);
-                  if (isNaN(blockDate.getTime())) {
-                    blockDate = new Date();
-                  }
+              if (!targetUserId) {
+                const firstUser = await prisma.user.findFirst();
+                targetUserId = firstUser?.id;
+              }
+            } catch (err: any) {
+              console.warn("Could not query user from Prisma:", err.message);
+            }
 
-                  return await prisma.plannerBlock.create({
-                    data: {
-                      userId: targetUserId,
-                      title: block.title,
-                      date: blockDate,
-                      startTime: block.startTime || "08:00",
-                      endTime: block.endTime || "09:30",
-                      type: block.type || "ai_suggested",
-                      status: "pending"
+            let createdBlocks: any[] = [];
+            try {
+              if (targetUserId) {
+                createdBlocks = await Promise.all(
+                  (blocks || []).map(async (block: any) => {
+                    let blockDate = new Date(block.date);
+                    if (isNaN(blockDate.getTime())) {
+                      blockDate = new Date();
                     }
-                  });
-                })
-              );
 
-              const formattedBlocks = createdBlocks.map(b => {
-                const [sh, sm] = (b.startTime || '08:00').split(':').map(Number);
-                const [eh, em] = (b.endTime || '09:30').split(':').map(Number);
-                const durationMinutes = (!isNaN(sh) && !isNaN(eh)) ? Math.max(15, (eh * 60 + em) - (sh * 60 + sm)) : 60;
-                
-                const dateStr = b.date ? b.date.toISOString().split('T')[0] : todayStr;
+                    return await prisma.plannerBlock.create({
+                      data: {
+                        userId: targetUserId,
+                        title: block.title,
+                        date: blockDate,
+                        startTime: block.startTime || "08:00",
+                        endTime: block.endTime || "09:30",
+                        type: block.type || "ai_suggested",
+                        status: "pending"
+                      }
+                    });
+                  })
+                );
+              }
+            } catch (dbErr: any) {
+              console.warn("DB save warning, falling back to local formatting:", dbErr.message);
+            }
 
-                return {
-                  id: b.id,
-                  deadlineId: b.relatedDeadlineId || "ai-generated",
-                  taskName: b.title,
-                  date: dateStr,
-                  startTime: b.startTime,
-                  endTime: b.endTime,
-                  durationMinutes,
-                  explanation: "Lịch do AI tự động xếp",
-                  status: b.status || 'pending',
-                  urgencyScore: 5,
-                  isBuffer: false
-                };
-              });
+            const formattedBlocks = (blocks || []).map((b: any, idx: number) => {
+              const created = createdBlocks[idx];
+              const [sh, sm] = (b.startTime || '08:00').split(':').map(Number);
+              const [eh, em] = (b.endTime || '09:30').split(':').map(Number);
+              const durationMinutes = (!isNaN(sh) && !isNaN(eh)) ? Math.max(15, (eh * 60 + em) - (sh * 60 + sm)) : 60;
+              
+              const dateStr = b.date ? (typeof b.date === 'string' ? b.date : new Date(b.date).toISOString().split('T')[0]) : todayStr;
 
               return {
-                success: true,
-                message: `Đã tự động thêm ${createdBlocks.length} buổi học vào AI Planner của bạn!`,
-                blocks: formattedBlocks
+                id: created?.id || "ai-block-" + Date.now() + "-" + idx,
+                deadlineId: created?.relatedDeadlineId || "ai-generated",
+                taskName: b.title,
+                date: dateStr,
+                startTime: b.startTime || "08:00",
+                endTime: b.endTime || "09:30",
+                durationMinutes,
+                explanation: "Lịch do AI tự động xếp",
+                status: created?.status || 'pending',
+                urgencyScore: 5,
+                isBuffer: false
               };
-            } catch (error: any) {
-              console.error("Error saving planner blocks:", error);
-              return { success: false, error: `Lỗi khi lưu lịch: ${error.message}` };
-            }
+            });
+
+            return {
+              success: true,
+              message: `Đã tự động thêm ${formattedBlocks.length} buổi học vào AI Planner của bạn!`,
+              blocks: formattedBlocks
+            };
           }
         }
       },

@@ -35,10 +35,18 @@ export function Chatbot() {
 
   useEffect(() => {
     messages.forEach((m: any) => {
-      m.toolInvocations?.forEach((t: any) => {
+      const toolInvocations: any[] = [
+        ...(m.toolInvocations || []),
+        ...((m.parts || [])
+          .filter((p: any) => p.type === 'tool-invocation')
+          .map((p: any) => p.toolInvocation || p))
+      ];
+
+      toolInvocations.forEach((t: any) => {
         if (t.toolName === 'schedule_study_blocks' && t.result?.success) {
-          if (!dispatchedToolCalls.current.has(t.toolCallId)) {
-            dispatchedToolCalls.current.add(t.toolCallId);
+          const toolCallId = t.toolCallId || t.id;
+          if (toolCallId && !dispatchedToolCalls.current.has(toolCallId)) {
+            dispatchedToolCalls.current.add(toolCallId);
             dispatch({ type: 'ADD_PLANNER_BLOCKS', payload: t.result.blocks });
           }
         }
@@ -46,8 +54,7 @@ export function Chatbot() {
     });
   }, [messages, dispatch]);
 
-  // Return null if not logged in (must be after all hooks)
-  if (!user) return null;
+  const displayName = user?.name || 'bạn';
 
   return (
     <div className="fixed bottom-6 right-6 z-[100]">
@@ -82,14 +89,27 @@ export function Chatbot() {
                   <Sparkles size={48} className="text-primary" />
                 </div>
                 <div>
-                  <p className="font-semibold text-lg text-foreground gradient-text">Xin chào, {user.name || 'bạn'}!</p>
+                  <p className="font-semibold text-lg text-foreground gradient-text">Xin chào, {displayName}!</p>
                   <p className="text-sm text-muted-foreground mt-1">Mình có thể giúp gì cho bạn hôm nay?</p>
                 </div>
               </div>
             )}
             {(messages || []).map((m: any) => {
-              const textContent = m.content || (m.parts ? m.parts.map((p: any) => (typeof p === 'string' ? p : p.text || '')).join('') : '');
-              const hasTools = m.toolInvocations && m.toolInvocations.length > 0;
+              let textContent = m.content || '';
+              if (!textContent && Array.isArray(m.parts)) {
+                textContent = m.parts
+                  .map((p: any) => (typeof p === 'string' ? p : p.text || ''))
+                  .filter(Boolean)
+                  .join('');
+              }
+
+              const toolInvocations: any[] = [
+                ...(m.toolInvocations || []),
+                ...((m.parts || [])
+                  .filter((p: any) => p.type === 'tool-invocation')
+                  .map((p: any) => p.toolInvocation || p))
+              ];
+              const hasTools = toolInvocations.length > 0;
 
               if (m.role !== 'user' && !textContent && !hasTools) {
                 return null;
@@ -106,8 +126,8 @@ export function Chatbot() {
                     {textContent && <div className="whitespace-pre-wrap leading-relaxed">{textContent}</div>}
 
                   {/* Handle tool calls UI */}
-                  {m.toolInvocations?.map((toolInvocation: any) => {
-                    const toolCallId = toolInvocation.toolCallId;
+                  {toolInvocations.map((toolInvocation: any) => {
+                    const toolCallId = toolInvocation.toolCallId || toolInvocation.id;
                     const result = toolInvocation.result;
                     if (toolInvocation.toolName === 'schedule_study_blocks') {
                       return (
@@ -183,7 +203,7 @@ export function Chatbot() {
                 setLocalInput('');
 
                 if (typeof sendMessage === 'function') {
-                  sendMessage({ role: 'user', content: messageText });
+                  sendMessage({ text: messageText });
                 } else {
                   alert('SDK Error: sendMessage is not a function');
                 }
