@@ -1,9 +1,10 @@
 import React from 'react';
 import { useApp, useMascot, useStreak } from '../../store/AppContext';
 import { PERSONAS } from '../../lib/mascotData';
-import { Flame, Moon, Sun, Shield, Zap, Bell } from 'lucide-react';
+import { Flame, Moon, Sun, Shield, Zap } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import NotificationBell from './NotificationBell';
 
 export default function Header() {
   const { state, dispatch } = useApp();
@@ -89,13 +90,8 @@ export default function Header() {
           {mounted && state.isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </Button>
 
-        {/* Notification (mock) */}
-        <Button variant="ghost" size="icon" className="rounded-xl w-9 h-9 relative">
-          <Bell className="w-4 h-4" />
-          {mounted && streak.atRisk && (
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-destructive" />
-          )}
-        </Button>
+        {/* Notification (real) */}
+        <NotificationBell />
 
         {/* Avatar */}
         <div

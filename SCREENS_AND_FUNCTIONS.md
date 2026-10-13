@@ -69,6 +69,12 @@
 | GET | `/api/costudy/rooms/[roomId]/reactions` | `src/app/api/costudy/rooms/[roomId]/reactions/route.ts` | List room message reactions |
 | POST | `/api/costudy/rooms/[roomId]/reactions` | `src/app/api/costudy/rooms/[roomId]/reactions/route.ts` | Toggle a reaction on a message |
 | POST | `/api/costudy/action` | `src/app/api/costudy/action/route.ts` | Room actions: join (enforces `maxMembers`, 409 when full), leave (reassigns host to lowest remaining user id), poll, status, sync + settings (any member may write the shared pomodoro/durations) |
+| GET | `/api/cron/reminders` | `src/app/api/cron/reminders/route.ts` | Vercel Cron endpoint (*/10 * * * *): scans PlannerBlocks, sends due reminders via in-app/push/email channels protected by `CRON_SECRET` |
+| GET/PUT | `/api/notification-settings` | `src/app/api/notification-settings/route.ts` | Read/update per-user notification settings (in-app/web-push/email/gcal toggles + minutes-before list) |
+| GET/PATCH | `/api/notification` | `src/app/api/notification/route.ts` | List notifications + unread count; PATCH marks read (one or all) |
+| POST | `/api/notification/test` | `src/app/api/notification/test/route.ts` | Send test notification through all enabled channels |
+| GET | `/api/push/vapid` | `src/app/api/push/vapid/route.ts` | Return VAPID public key for Web Push subscription |
+| POST/DELETE | `/api/push/subscribe` | `src/app/api/push/subscribe/route.ts` | Save/remove browser push subscription (upsert by endpoint) |
 
 ---
 
@@ -241,5 +247,9 @@
 | Deadline | User's deadlines/tasks (dueDate, difficulty, priority, estimated hours) |
 | FixedBlock | Recurring schedule blocks (class, work, etc.) |
 | ActiveRoom | Active co-study rooms (members, pomodoro state) |
+| NotificationSetting | Per-user notification preferences (in-app/push/email/gcal, minutesBefore) |
+| PushSubscription | Web Push subscription per browser (endpoint, p256dh, auth) |
+| Notification | Stored in-app notification (title, body, url, readAt) |
+| SentNotification | De-dup ledger: one row per (user, block, minutesBefore, channel) |
 | RoomMember | Members of a co-study room |
 | RoomMessage | Persisted room chat messages (cascade-deleted with room) |

@@ -18,8 +18,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
 import {
-  Brain, Plus, Trash2, CalendarDays, Clock, AlertCircle, CheckCircle2, Play, Zap, BarChart3
+  Brain, Plus, Trash2, CalendarDays, Clock, AlertCircle, CheckCircle2, Play, Zap, BarChart3, CalendarPlus
 } from 'lucide-react';
+import { buildGoogleCalendarUrl } from '@/lib/gcal';
 
 const DAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 const FULL_DAYS = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
@@ -113,6 +114,16 @@ export default function PlannerPage() {
   const fixedBlocks = appState.plannerState.fixedBlocks;
   const plan = appState.plannerState.generatedPlan;
   const health = appState.plannerState.healthSummary;
+
+  // GCal toggle → hiện nút "Google Calendar" trên từng block
+  const [notifSetting, setNotifSetting] = useState<{ gcalEnabled: boolean } | null>(null);
+  useEffect(() => {
+    if (!appState.user) return;
+    fetch(`/api/notification-settings?userId=${appState.user.id}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setNotifSetting(d ? { gcalEnabled: !!d.gcalEnabled } : null))
+      .catch(() => { });
+  }, [appState.user]);
 
   const handleGenerate = () => {
     setGenerating(true);
@@ -660,6 +671,7 @@ export default function PlannerPage() {
                                 key={block.id}
                                 block={block}
                                 colorIndex={deadlines.findIndex((d) => d.id === block.deadlineId)}
+                                showGcal={notifSetting?.gcalEnabled ?? false}
                                 onStartSession={() => {
                                   const state = {
                                     taskTitle: block.taskName,
@@ -713,10 +725,11 @@ function HealthCard({ label, value, icon, color }: { label: string; value: strin
   );
 }
 
-function PlanBlock({ block, colorIndex, onStartSession }: {
+function PlanBlock({ block, colorIndex, onStartSession, showGcal }: {
   block: PlannerBlock;
   colorIndex: number;
   onStartSession: () => void;
+  showGcal: boolean;
 }) {
   const [showExplain, setShowExplain] = useState(false);
   const color = TASK_COLORS[Math.max(0, colorIndex) % TASK_COLORS.length];
@@ -752,6 +765,24 @@ function PlanBlock({ block, colorIndex, onStartSession }: {
             >
               <Play className="w-3 h-3" /> Bắt đầu học
             </button>
+          )}
+          {showGcal && (
+            <a
+              href={buildGoogleCalendarUrl({
+                title: block.taskName,
+                date: block.date,
+                startTime: block.startTime,
+                endTime: block.endTime,
+                details: `FocusMate AI Planner — ${block.explanation}`,
+              })}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-1 py-1 rounded-lg font-medium mt-1"
+              style={{ background: 'transparent', border: '1px solid hsl(var(--border))', color: 'hsl(var(--foreground))' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <CalendarPlus className="w-3 h-3" /> Google Calendar
+            </a>
           )}
         </div>
       )}

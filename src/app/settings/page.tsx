@@ -8,21 +8,164 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Bell, Clock, Settings as SettingsIcon, Volume2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { User, Bell, Clock, Settings as SettingsIcon, Volume2, Smartphone, Mail, CalendarPlus, Monitor, Send } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { isPomodoroSoundEnabled, setPomodoroSoundEnabled, playTimerFinishSound } from '@/lib/sound';
+import { usePushNotifications, getPushStatus } from '@/hooks/usePushNotifications';
+
+const REMINDER_OPTIONS = [
+  { value: 4320, label: '3 ngày trước' },
+  { value: 1440, label: '1 ngày trước' },
+  { value: 60, label: '1 giờ trước' },
+  { value: 0, label: 'Khi bắt đầu' },
+];
+
+interface NotifSettings {
+  inAppEnabled: boolean;
+  pushEnabled: boolean;
+  emailEnabled: boolean;
+  gcalEnabled: boolean;
+  minutesBefore: number[];
+}
 
 export default function SettingsPage() {
   const { state, dispatch } = useApp();
   const { toast } = useToast();
-  
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [mascotReminders, setMascotReminders] = useState(true);
+  const { status: pushStatus, enablePush, disablePush } = usePushNotifications();
+
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [notif, setNotif] = useState<NotifSettings>({
+    inAppEnabled: true,
+    pushEnabled: false,
+    emailEnabled: false,
+    gcalEnabled: false,
+    minutesBefore: [1440, 60],
+  });
+  const [testing, setTesting] = useState(false);
+
+  const loadSettings = React.useCallback(async () => {
+    if (!state.user) return;
+    try {
+      const res = await fetch(`/api/notification-settings?userId=${state.user.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setNotif({
+          inAppEnabled: data.inAppEnabled,
+          pushEnabled: data.pushEnabled,
+          emailEnabled: data.emailEnabled,
+          gcalEnabled: data.gcalEnabled,
+          minutesBefore: Array.isArray(data.minutesBefore) ? data.minutesBefore : [1440, 60],
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [state.user]);
 
   React.useEffect(() => {
     setSoundEnabled(isPomodoroSoundEnabled());
-  }, []);
+    loadSettings();
+  }, [loadSettings]);
+
+  const saveSetting = async (patch: Partial<NotifSettings>) => {
+    if (!state.user) return;
+    const next = { ...notif, ...patch };
+    setNotif(next);
+    try {
+      await fetch('/api/notification-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: state.user.id, ...next }),
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Lỗi', description: 'Không lưu được cài đặt thông báo.', variant: 'destructive' });
+    }
+  };
+
+  const handleToggleInApp = (val: boolean) => {
+    saveSetting({ inAppEnabled: val });
+    toast({
+      title: val ? 'Đã bật In-app notification' : 'Đã tắt In-app notification',
+      description: val ? 'Sẽ hiện chuông 🔔 và toast trên web.' : 'Không còn nhắc trong web.',
+    });
+  };
+
+  const handleTogglePush = async (val: boolean) => {
+    if (!state.user) return;
+    if (val) {
+      const result = await enablePush(state.user.id);
+      if (result.ok) {
+        saveSetting({ pushEnabled: true });
+        toast({ title: 'Đã bật Web Push 🔔', description: 'Bạn sẽ nhận thông báo ngay cả khi không mở web.' });
+      } else {
+        toast({ title: 'Không bật được Push', description: result.error, variant: 'destructive' });
+      }
+    } else {
+      await disablePush(state.user.id);
+      saveSetting({ pushEnabled: false });
+      toast({ title: 'Đã tắt Web Push', description: 'Không còn nhận push notification.' });
+    }
+  };
+
+  const handleToggleEmail = (val: boolean) => {
+    saveSetting({ emailEnabled: val });
+    if (val && state.user) {
+      toast({
+        title: 'Đã bật Email reminder 📧',
+        description: `Email nhắc sẽ gửi tới ${state.user.email} (server cần GMAIL_USER + GMAIL_APP_PASSWORD).`,
+      });
+    } else {
+      toast({ title: 'Đã tắt Email reminder' });
+    }
+  };
+
+  const handleToggleGcal = (val: boolean) => {
+    saveSetting({ gcalEnabled: val });
+    if (val) {
+      toast({
+        title: 'Đã bật Google Calendar 📅',
+        description: 'Nút "Add to Google Calendar" sẽ xuất hiện trên từng phiên học trong AI Planner.',
+      });
+    } else {
+      toast({ title: 'Đã tắt Google Calendar' });
+    }
+  };
+
+  const handleToggleReminderTime = (minutes: number, checked: boolean) => {
+    const set = new Set(notif.minutesBefore);
+    if (checked) set.add(minutes);
+    else set.delete(minutes);
+    const sorted = Array.from(set).sort((a, b) => b - a);
+    saveSetting({ minutesBefore: sorted });
+  };
+
+  const handleTestNotification = async () => {
+    if (!state.user) return;
+    setTesting(true);
+    try {
+      const res = await fetch('/api/notification/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: state.user.id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({
+          title: 'Đã gửi notification test',
+          description: `Qua các kênh: ${data.sentVia.join(' • ')}`,
+        });
+      } else {
+        toast({ title: 'Gửi test thất bại', variant: 'destructive' });
+      }
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Lỗi kết nối', variant: 'destructive' });
+    } finally {
+      setTesting(false);
+    }
+  };
 
   const handleToggleSound = (val: boolean) => {
     setSoundEnabled(val);
@@ -51,13 +194,6 @@ export default function SettingsPage() {
     toast({
       title: 'Đã lưu cài đặt',
       description: `Đã cập nhật Pomodoro: ${session} phút học / ${breakLen} phút nghỉ.`,
-    });
-  };
-
-  const handleSaveNotifications = () => {
-    toast({
-      title: 'Đã cập nhật thông báo',
-      description: 'Cài đặt thông báo đã được lưu (Demo).',
     });
   };
 
@@ -155,29 +291,113 @@ export default function SettingsPage() {
               <CardTitle className="text-lg flex items-center gap-2">
                 <Bell className="w-5 h-5 text-butter-500" /> Thông báo & Nhắc nhở
               </CardTitle>
-              <CardDescription>Tùy chỉnh cách FocusMate tương tác với bạn.</CardDescription>
+              <CardDescription>Chọn kênh nhận thông báo và thời điểm nhắc trước mỗi phiên học trong AI Planner.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium">Bật thông báo ứng dụng</Label>
-                  <p className="text-sm text-muted-foreground">Nhận thông báo khi đến giờ học hoặc có deadline sắp tới.</p>
+              {/* Channels */}
+              <div className="space-y-4">
+                <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Kênh thông báo</Label>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <Monitor className="w-4 h-4 text-sky-500" />
+                      <Label className="text-base font-medium">In-app notification</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Chuông 🔔 trên web + toast khi đang mở FocusMate.</p>
+                  </div>
+                  <Switch checked={notif.inAppEnabled} onCheckedChange={handleToggleInApp} />
                 </div>
-                <Switch 
-                  checked={notificationsEnabled}
-                  onCheckedChange={(val) => { setNotificationsEnabled(val); handleSaveNotifications(); }}
-                />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-emerald-500" />
+                      <Label className="text-base font-medium">Web Push</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Thông báo hệ điều hành ngay cả khi không mở web.
+                      {pushStatus === 'denied' && (
+                        <span className="text-destructive"> — Bạn đã chặn quyền thông báo trong trình duyệt.</span>
+                      )}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notif.pushEnabled && pushStatus === 'granted'}
+                    disabled={pushStatus === 'unsupported' || pushStatus === 'denied'}
+                    onCheckedChange={handleTogglePush}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-rose-500" />
+                      <Label className="text-base font-medium">Email</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Gửi email nhắc nhở tới {state.user.email}.</p>
+                  </div>
+                  <Switch checked={notif.emailEnabled} onCheckedChange={handleToggleEmail} />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <CalendarPlus className="w-4 h-4 text-indigo-500" />
+                      <Label className="text-base font-medium">Google Calendar</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Thêm nút "Add to Google Calendar" trên từng phiên học — Google Calendar app sẽ nhắc trên điện thoại của bạn.</p>
+                  </div>
+                  <Switch checked={notif.gcalEnabled} onCheckedChange={handleToggleGcal} />
+                </div>
               </div>
-              <div className="flex items-center justify-between">
+
+              {/* Reminder time */}
+              <div className="space-y-3 pt-2 border-t border-border/50">
+                <Label className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Nhắc trước bao lâu?</Label>
+                <div className="flex flex-wrap gap-x-6 gap-y-3">
+                  {REMINDER_OPTIONS.map((opt) => (
+                    <div key={opt.value} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`reminder-${opt.value}`}
+                        checked={notif.minutesBefore.includes(opt.value)}
+                        onCheckedChange={(checked) => handleToggleReminderTime(opt.value, checked === true)}
+                      />
+                      <Label htmlFor={`reminder-${opt.value}`} className="text-sm font-normal cursor-pointer">
+                        {opt.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Test button */}
+              <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                <div className="space-y-0.5">
+                  <Label className="text-base font-medium">Kiểm tra thông báo</Label>
+                  <p className="text-sm text-muted-foreground">Gửi 1 notification test qua tất cả kênh đang bật để kiểm tra.</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-lg flex items-center gap-1.5"
+                  disabled={testing}
+                  onClick={handleTestNotification}
+                >
+                  <Send className="w-3.5 h-3.5 text-sky-500" />
+                  {testing ? 'Đang gửi...' : 'Gửi test'}
+                </Button>
+              </div>
+
+              {/* Mascot + Sound */}
+              <div className="flex items-center justify-between pt-2 border-t border-border/50">
                 <div className="space-y-0.5">
                   <Label className="text-base font-medium">Nhắc nhở từ Mascot</Label>
                   <p className="text-sm text-muted-foreground">Mascot sẽ hiện lên nhắc nhở nếu bạn chưa học trong ngày.</p>
                 </div>
-                <Switch 
-                  checked={mascotReminders}
-                  onCheckedChange={(val) => { setMascotReminders(val); handleSaveNotifications(); }}
-                />
+                <Switch defaultChecked />
               </div>
+
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
