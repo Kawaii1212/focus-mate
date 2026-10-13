@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Pause, Square, Flame, Zap, Star } from 'lucide-react';
 import QuitWarningModal from '@/components/pomodoro/QuitWarningModal';
+import { playTimerFinishSound } from '@/lib/sound';
 
 interface SessionState {
   taskTitle: string;
@@ -107,6 +108,9 @@ export default function ActiveSessionPage() {
   const handleComplete = async () => {
     if (completingRef.current || !session) return;
     completingRef.current = true;
+
+    // Play chime sound notification when Pomodoro session finishes
+    playTimerFinishSound('focus');
 
     const targetSeconds = session.focusMinutes * 60;
     const elapsedSeconds = Math.min(timer.elapsedSeconds, targetSeconds);

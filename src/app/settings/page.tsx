@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Bell, Clock, Settings as SettingsIcon } from 'lucide-react';
+import { User, Bell, Clock, Settings as SettingsIcon, Volume2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { isPomodoroSoundEnabled, setPomodoroSoundEnabled, playTimerFinishSound } from '@/lib/sound';
 
 export default function SettingsPage() {
   const { state, dispatch } = useApp();
@@ -18,6 +19,27 @@ export default function SettingsPage() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [mascotReminders, setMascotReminders] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+
+  React.useEffect(() => {
+    setSoundEnabled(isPomodoroSoundEnabled());
+  }, []);
+
+  const handleToggleSound = (val: boolean) => {
+    setSoundEnabled(val);
+    setPomodoroSoundEnabled(val);
+    toast({
+      title: val ? 'Đã bật âm thanh' : 'Đã tắt âm thanh',
+      description: val ? 'Chuông sẽ reo khi kết thúc phiên Pomodoro.' : 'Đã tắt chuông báo Pomodoro.',
+    });
+  };
+
+  const handleTestSound = () => {
+    playTimerFinishSound('focus');
+    toast({
+      title: 'Đang phát chuông thử nghiệm',
+      description: 'Âm thanh báo hiệu kết thúc Pomodoro.',
+    });
+  };
 
   if (!state.user) return null;
 
@@ -158,12 +180,25 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label className="text-base font-medium">Âm thanh Pomodoro</Label>
-                  <p className="text-sm text-muted-foreground">Phát âm thanh khi kết thúc mỗi phiên học và nghỉ.</p>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-base font-medium">Âm thanh Pomodoro</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs rounded-lg px-2 flex items-center gap-1.5 hover:bg-sky-50 dark:hover:bg-sky-950/30"
+                      onClick={handleTestSound}
+                      title="Nghe thử âm thanh chuông báo hiệu"
+                    >
+                      <Volume2 className="w-3.5 h-3.5 text-sky-500" />
+                      Nghe thử
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Phát âm thanh chuông khi kết thúc mỗi phiên học và nghỉ.</p>
                 </div>
                 <Switch 
                   checked={soundEnabled}
-                  onCheckedChange={(val) => { setSoundEnabled(val); handleSaveNotifications(); }}
+                  onCheckedChange={handleToggleSound}
                 />
               </div>
             </CardContent>

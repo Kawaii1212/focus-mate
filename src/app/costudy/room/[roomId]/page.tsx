@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Clock, Users } from 'lucide-react';
 import { CoStudySettings, PomodoroState } from '@/types';
+import { playTimerFinishSound } from '@/lib/sound';
 
 const DEFAULT_POMODORO: PomodoroState = { timeLeft: 25 * 60, isActive: false, mode: 'focus' };
 const RESYNC_INTERVAL_MS = 30000;
@@ -239,6 +240,10 @@ export default function CoStudyRoomPage() {
   useEffect(() => {
     if (loadState !== 'ready' || !roomId || !user) return;
     if (!pomodoro.isActive || displayTimeLeft > 0) return;
+
+    // Play chime sound when phase reaches zero
+    playTimerFinishSound(pomodoro.mode === 'focus' ? 'focus' : 'break');
+
     const next = nextPomodoroAfterFinish(pomodoro.mode, settings);
     lastPushRef.current = { pomodoro: next, settings, reconciled: false, at: Date.now() };
     if (store) {
