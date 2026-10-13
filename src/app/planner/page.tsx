@@ -223,6 +223,43 @@ export default function PlannerPage() {
               <OverviewStat icon={<Brain />} label="Phiên đã xếp" value={`${plan.length} phiên`} />
             </div>
 
+            {plan.length > 0 && (
+              <Card className="rounded-2xl shadow-fm-sm">
+                <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Brain className="w-5 h-5" style={{ color: 'hsl(var(--sky))' }} />
+                    Lịch học do AI tự động xếp ({plan.length} phiên)
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl text-xs"
+                    onClick={() => setActiveTab('calendar')}
+                  >
+                    Xem trên Lịch tuần →
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {plan.map((b) => (
+                    <div key={b.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/40 text-sm">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: 'hsl(var(--sky))' }} />
+                        <div>
+                          <p className="font-semibold text-foreground">{b.taskName}</p>
+                          <p className="text-xs text-muted-foreground">{b.explanation || 'Lịch học do AI tự động xếp'}</p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="font-medium text-xs px-2.5 py-1 rounded-full" style={{ background: 'hsl(var(--sky) / 0.15)', color: 'hsl(var(--sky))' }}>
+                          {b.date} • {b.startTime} - {b.endTime}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
             {deadlines.length === 0 && (
               <Card className="rounded-2xl shadow-fm-sm border-dashed">
                 <CardContent className="p-8 text-center space-y-3">

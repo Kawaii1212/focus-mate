@@ -40,17 +40,19 @@ export async function POST(req: Request) {
 Current Date Context:
 - Today's date: ${todayStr} (${currentDayOfWeek})
 
-AUTOMATIC AI PLANNER SCHEDULING RULE:
-Whenever a user asks for a study plan, weekly schedule, exam prep schedule, or asks to add/schedule/fill study sessions into their AI Planner (e.g. "lên lịch học môn Toán", "tạo thời gian biểu ôn thi", "add thêm vào AI Planner cho tôi", "sắp xếp vào AI planner"):
-1. You MUST generate a detailed study plan text in Vietnamese with specific days, topics, and times.
-2. You MUST AUTOMATICALLY call the 'schedule_study_blocks' tool to save the plan directly to their AI Planner account. Do NOT ask for permission first.
-3. In the tool call parameters, pass 'blocks': an array of objects, each containing:
-   - title: Title of session (e.g. "Học Xác suất thống kê - Ngày 1")
+CRITICAL AUTOMATIC AI PLANNER SCHEDULING RULE:
+Whenever user asks to create, suggest, plan, or add/save study sessions into their AI Planner (e.g. "lên lịch học môn...", "hãy thêm vào phần AI Planner cho tôi", "add vào planner", "lên lịch giúp tôi"):
+1. You MUST call the 'schedule_study_blocks' tool. DO NOT JUST SAY IN TEXT THAT YOU SAVED IT.
+2. The 'blocks' parameter in 'schedule_study_blocks' MUST contain an array of study block objects.
+3. If study sessions were discussed in earlier messages in the chat history, EXTRACT all of them into 'blocks'.
+4. If no specific sessions were mentioned yet, CREATE 3 to 7 realistic sessions for the upcoming days starting from today (${todayStr}) and pass them into 'blocks'.
+5. NEVER leave 'blocks' empty. Each block must have:
+   - title: Title of session (e.g. "Học Xác suất thống kê - Buổi 1")
    - date: Date string in YYYY-MM-DD format (starting from today ${todayStr})
    - startTime: Start time in HH:mm format (e.g. "08:00")
    - endTime: End time in HH:mm format (e.g. "09:30")
    - type: "ai_suggested"
-4. Always call the tool immediately whenever providing a schedule or when requested to add to planner. Tell the user cheerfully that you have saved the schedule to their AI Planner!`;
+6. After calling the tool, cheerily summarize for the user the sessions you have saved to their AI Planner!`;
 
     // Clean up UI-specific properties and remove empty assistant messages from history
     const sanitizedMessages = (messages || [])
@@ -85,7 +87,7 @@ Whenever a user asks for a study plan, weekly schedule, exam prep schedule, or a
               startTime: z.string().describe('Start time in HH:mm format, e.g. "08:00"'),
               endTime: z.string().describe('End time in HH:mm format, e.g. "09:30"'),
               type: z.string().optional().describe('Type of block: "study", "ai_suggested", "revision", etc.'),
-            }))
+            })).min(1).describe('List of study blocks to save. Must not be empty.')
           }),
           execute: async ({ blocks }: any) => {
             console.log("Executing schedule_study_blocks tool. Count:", blocks?.length);

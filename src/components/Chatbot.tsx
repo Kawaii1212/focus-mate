@@ -27,6 +27,38 @@ export function Chatbot() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const dispatchedToolCalls = useRef<Set<string>>(new Set());
 
+  // Helper to extract tool calls from both AI SDK 4 and 5 formats
+  const getToolInvocations = (m: any): any[] => {
+    const list: any[] = [];
+    if (Array.isArray(m.toolInvocations)) {
+      m.toolInvocations.forEach((t: any) => {
+        list.push({
+          toolName: t.toolName,
+          toolCallId: t.toolCallId || t.id,
+          result: t.output || t.result,
+          state: t.state,
+          input: t.input || t.args
+        });
+      });
+    }
+    if (Array.isArray(m.parts)) {
+      m.parts.forEach((p: any) => {
+        if (p.type === 'tool-invocation' || p.type?.startsWith('tool-') || p.type === 'dynamic-tool') {
+          const toolName = p.toolName || (p.type?.startsWith('tool-') ? p.type.replace(/^tool-/, '') : '');
+          const result = p.output || p.result;
+          list.push({
+            toolName,
+            toolCallId: p.toolCallId || p.id,
+            result,
+            state: p.state,
+            input: p.input || p.args
+          });
+        }
+      });
+    }
+    return list;
+  };
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -35,19 +67,16 @@ export function Chatbot() {
 
   useEffect(() => {
     messages.forEach((m: any) => {
-      const toolInvocations: any[] = [
-        ...(m.toolInvocations || []),
-        ...((m.parts || [])
-          .filter((p: any) => p.type === 'tool-invocation')
-          .map((p: any) => p.toolInvocation || p))
-      ];
+      const toolInvocations = getToolInvocations(m);
 
       toolInvocations.forEach((t: any) => {
         if (t.toolName === 'schedule_study_blocks' && t.result?.success) {
-          const toolCallId = t.toolCallId || t.id;
+          const toolCallId = t.toolCallId;
           if (toolCallId && !dispatchedToolCalls.current.has(toolCallId)) {
             dispatchedToolCalls.current.add(toolCallId);
-            dispatch({ type: 'ADD_PLANNER_BLOCKS', payload: t.result.blocks });
+            if (Array.isArray(t.result.blocks) && t.result.blocks.length > 0) {
+              dispatch({ type: 'ADD_PLANNER_BLOCKS', payload: t.result.blocks });
+            }
           }
         }
       });
@@ -103,12 +132,7 @@ export function Chatbot() {
                   .join('');
               }
 
-              const toolInvocations: any[] = [
-                ...(m.toolInvocations || []),
-                ...((m.parts || [])
-                  .filter((p: any) => p.type === 'tool-invocation')
-                  .map((p: any) => p.toolInvocation || p))
-              ];
+              const toolInvocations = getToolInvocations(m);
               const hasTools = toolInvocations.length > 0;
 
               if (m.role !== 'user' && !textContent && !hasTools) {
@@ -127,7 +151,7 @@ export function Chatbot() {
 
                   {/* Handle tool calls UI */}
                   {toolInvocations.map((toolInvocation: any) => {
-                    const toolCallId = toolInvocation.toolCallId || toolInvocation.id;
+                    const toolCallId = toolInvocation.toolCallId;
                     const result = toolInvocation.result;
                     if (toolInvocation.toolName === 'schedule_study_blocks') {
                       return (
@@ -203,7 +227,7 @@ export function Chatbot() {
                 setLocalInput('');
 
                 if (typeof sendMessage === 'function') {
-                  sendMessage({ text: messageText });
+                  sendMessage({ text: messageText }, { body: { userId: user?.id } });
                 } else {
                   alert('SDK Error: sendMessage is not a function');
                 }
