@@ -18,15 +18,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!email || !password) {
-      setError('Vui lòng nhập đầy đủ thông tin.');
+      setError('Vui lòng nhập đầy đủ email và mật khẩu.');
       return;
     }
+    setLoading(true);
+    setError('');
     try {
-      const user = await authApi.login({ email, password });
+      const user = await authApi.login({ email: email.trim(), password });
       dispatch({ type: 'SET_USER', payload: user });
       if (user.onboardingComplete) {
         router.push('/dashboard');
@@ -35,7 +38,9 @@ export default function LoginPage() {
       }
     } catch (err) {
       const error = err as Error;
-      setError(error.message || 'Tài khoản hoặc mật khẩu không đúng.');
+      setError(error.message || 'Tài khoản hoặc mật khẩu không chính xác.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -73,10 +78,20 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="rounded-xl"
+                  required
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="password">Mật khẩu</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password">Mật khẩu</Label>
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs font-semibold hover:underline"
+                    style={{ color: 'hsl(var(--sky))' }}
+                  >
+                    Quên mật khẩu?
+                  </Link>
+                </div>
                 <div className="relative">
                   <Input
                     id="password"
@@ -85,6 +100,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="rounded-xl pr-10"
+                    required
                   />
                   <button
                     type="button"
@@ -102,10 +118,11 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
+                disabled={loading}
                 className="w-full rounded-xl font-semibold h-11"
                 style={{ background: 'hsl(var(--sky))' }}
               >
-                Đăng Nhập
+                {loading ? 'Đang đăng nhập...' : 'Đăng Nhập'}
               </Button>
             </form>
 
@@ -119,7 +136,7 @@ export default function LoginPage() {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground">
-          MVP Demo · Không cần xác thực thật
+          FocusMate &copy; 2026 &mdash; Đồng hành chinh phục mục tiêu học tập
         </p>
       </div>
     </div>

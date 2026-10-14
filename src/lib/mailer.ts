@@ -96,3 +96,62 @@ export async function sendReminderEmail(p: ReminderEmailPayload): Promise<boolea
     return false;
   }
 }
+
+export interface PasswordResetEmailPayload {
+  to: string;
+  userName: string;
+  otp: string;
+}
+
+export async function sendPasswordResetEmail(p: PasswordResetEmailPayload): Promise<boolean> {
+  const mailer = getMailer();
+  if (!mailer) return false;
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const subject = `[FocusMate] Mã xác thực đặt lại mật khẩu: ${p.otp}`;
+
+  const html = `
+  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:520px;margin:auto;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;background:#ffffff">
+    <div style="background:linear-gradient(135deg,#0284c7,#38bdf8);padding:28px 32px;color:#ffffff;text-align:center">
+      <div style="font-size:26px;font-weight:800;letter-spacing:-0.5px">FocusMate</div>
+      <div style="opacity:.92;margin-top:6px;font-size:15px">Yêu cầu đặt lại mật khẩu</div>
+    </div>
+    <div style="padding:32px">
+      <p style="margin:0 0 16px;color:#1e293b;font-size:15px">
+        Xin chào <b>${p.userName || 'bạn'}</b>,
+      </p>
+      <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 24px">
+        Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản FocusMate của bạn. Vui lòng sử dụng mã xác thực (OTP) dưới đây để tiếp tục:
+      </p>
+      <div style="background:#f0f9ff;border:2px dashed #38bdf8;border-radius:14px;padding:20px;text-align:center;margin-bottom:24px">
+        <div style="color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px">Mã xác thực (OTP) của bạn</div>
+        <div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#0284c7;font-family:monospace">${p.otp}</div>
+        <div style="color:#94a3b8;font-size:12px;margin-top:8px">Mã có hiệu lực trong vòng 15 phút</div>
+      </div>
+      <p style="color:#64748b;font-size:13px;line-height:1.5;margin:0 0 24px">
+        Nếu bạn không thực hiện yêu cầu này, bạn có thể an tâm bỏ qua email này. Mật khẩu hiện tại của bạn sẽ không thay đổi.
+      </p>
+      <div style="text-align:center">
+        <a href="${appUrl}/forgot-password" style="display:inline-block;background:#0284c7;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 28px;border-radius:10px;font-size:14px">
+          Nhập mã xác thực ngay
+        </a>
+      </div>
+    </div>
+    <div style="padding:16px 32px;background:#f8fafc;color:#94a3b8;font-size:12px;text-align:center;border-top:1px solid #f1f5f9">
+      FocusMate &copy; 2026 &mdash; Đồng hành học tập cùng Mascot
+    </div>
+  </div>`;
+
+  try {
+    await mailer.sendMail({
+      from: `FocusMate <${GMAIL_USER}>`,
+      to: p.to,
+      subject,
+      html,
+    });
+    return true;
+  } catch (err) {
+    console.error('[mailer] sendPasswordResetEmail failed:', err);
+    return false;
+  }
+}

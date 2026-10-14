@@ -20,6 +20,8 @@ model User {
   isPremium          Boolean        @default(false)
   premiumExpiry      DateTime?
   createdAt          DateTime       @default(now())
+  resetToken         String?
+  resetTokenExpiry   DateTime?
 
   mascot             Mascot?
   sessions           StudySession[]

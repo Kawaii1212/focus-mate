@@ -27,6 +27,31 @@ export const authApi = {
         }
         return await response.json();
     }
+,
+    forgotPassword: async (email: string): Promise<{ success: boolean; message: string; emailSent?: boolean; demoOtp?: string }> => {
+        const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.message || "Không thể gửi yêu cầu đặt lại mật khẩu");
+        }
+        return data;
+    },
+    resetPassword: async (payload: { email: string; otp: string; newPassword: string }): Promise<{ success: boolean; message: string }> => {
+        const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.message || "Đặt lại mật khẩu thất bại");
+        }
+        return data;
+    }
 };
 
 export const userApi = {

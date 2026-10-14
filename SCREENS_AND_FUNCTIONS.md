@@ -24,6 +24,7 @@
 | `/` | `src/app/page.tsx` | Landing page with hero, features, CTA |
 | `/login` | `src/app/login/page.tsx` | Login form (email + password) |
 | `/signup` | `src/app/signup/page.tsx` | Signup form (name, email, password) |
+| `/forgot-password` | `src/app/forgot-password/page.tsx` | Quên mật khẩu & đặt lại mật khẩu bằng mã OTP 6 số |
 | `/onboarding` | `src/app/onboarding/page.tsx` | 6-step wizard: role, habits, goals, time, egg, mascot intro |
 | `/dashboard` | `src/app/dashboard/page.tsx` | Main hub: stats, sessions, planner preview, deadlines, quick actions |
 | `/study` | `src/app/study/page.tsx` | Pomodoro setup (task, focus/break times, solo/co-study) |
@@ -48,6 +49,8 @@
 |--------|-------|------|---------|
 | POST | `/api/auth/login` | `src/app/api/auth/login/route.ts` | User login |
 | POST | `/api/auth/signup` | `src/app/api/auth/signup/route.ts` | User registration |
+| POST | `/api/auth/forgot-password` | `src/app/api/auth/forgot-password/route.ts` | Tạo mã OTP đặt lại mật khẩu và gửi email |
+| POST | `/api/auth/reset-password` | `src/app/api/auth/reset-password/route.ts` | Xác thực OTP và lưu mật khẩu mới |
 | GET | `/api/user/[userId]` | `src/app/api/user/[userId]/route.ts` | Get user with all relations |
 | PATCH | `/api/user/[userId]` | `src/app/api/user/[userId]/route.ts` | Update user fields |
 | POST | `/api/user/[userId]/mascot` | `src/app/api/user/[userId]/mascot/route.ts` | Create/update mascot (upsert) |
