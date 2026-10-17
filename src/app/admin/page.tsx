@@ -64,6 +64,11 @@ export default function AdminOverviewPage() {
   const charts = data?.charts || {};
   const recent = data?.recent || {};
 
+  const growthTrend = Array.isArray(charts?.growthTrend) ? charts.growthTrend : [];
+  const mascotDistribution = Array.isArray(charts?.mascotDistribution) ? charts.mascotDistribution : [];
+  const recentUsers = Array.isArray(recent?.users) ? recent.users : [];
+  const recentPayments = Array.isArray(recent?.payments) ? recent.payments : [];
+
   return (
     <div className="space-y-8">
       {/* Header Welcome banner */}
@@ -237,10 +242,10 @@ export default function AdminOverviewPage() {
             </div>
           </CardHeader>
           <CardContent className="pt-4">
-            {charts.growthTrend && charts.growthTrend.length > 0 ? (
+            {growthTrend.length > 0 ? (
               <div className="h-56 flex items-end gap-2 pt-6 pb-2 px-2">
-                {charts.growthTrend.map((item: any, idx: number) => {
-                  const maxCount = Math.max(...charts.growthTrend.map((i: any) => i.count), 1);
+                {growthTrend.map((item: any, idx: number) => {
+                  const maxCount = Math.max(...growthTrend.map((i: any) => i.count), 1);
                   const heightPct = Math.max(12, Math.round((item.count / maxCount) * 100));
                   return (
                     <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
@@ -278,10 +283,10 @@ export default function AdminOverviewPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
-            {charts.mascotDistribution && charts.mascotDistribution.length > 0 ? (
+            {mascotDistribution.length > 0 ? (
               <div className="space-y-3 pt-2">
-                {charts.mascotDistribution.map((m: any, idx: number) => {
-                  const total = charts.mascotDistribution.reduce((acc: number, cur: any) => acc + cur.count, 0) || 1;
+                {mascotDistribution.map((m: any, idx: number) => {
+                  const total = mascotDistribution.reduce((acc: number, cur: any) => acc + cur.count, 0) || 1;
                   const pct = Math.round((m.count / total) * 100);
                   const colors = ['bg-amber-500', 'bg-blue-500', 'bg-emerald-500', 'bg-purple-500', 'bg-rose-500', 'bg-orange-500'];
                   const color = colors[idx % colors.length];
@@ -395,7 +400,7 @@ export default function AdminOverviewPage() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-slate-800">
-              {recent.users && recent.users.length > 0 ? (
+              {recentUsers.length > 0 ? (
                 recent.users.map((u: any) => (
                   <div key={u.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-slate-800/40 transition-colors">
                     <div className="flex items-center gap-3 min-w-0">
@@ -458,7 +463,7 @@ export default function AdminOverviewPage() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-slate-800">
-              {recent.payments && recent.payments.length > 0 ? (
+              {recentPayments.length > 0 ? (
                 recent.payments.map((p: any) => (
                   <div key={p.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-slate-800/40 transition-colors">
                     <div className="min-w-0 space-y-0.5">

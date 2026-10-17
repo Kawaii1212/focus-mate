@@ -28,7 +28,8 @@ import {
 import { toast } from 'sonner';
 
 export default function AdminSessionsPage() {
-  const [sessions, setSessions] = useState<any[]>([]);
+    const [sessions, setSessions] = useState<any[]>([]);
+  const [summaryData, setSummaryData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [validFilter, setValidFilter] = useState('all');
@@ -44,9 +45,19 @@ export default function AdminSessionsPage() {
       const res = await fetch(`/api/admin/sessions?${params.toString()}`);
       if (!res.ok) throw new Error('Không thể tải nhật ký phiên học');
       const data = await res.json();
-      setSessions(data || []);
+      
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.sessions)
+        ? data.sessions
+        : [];
+      setSessions(list);
+      if (data?.summary) {
+        setSummaryData(data.summary);
+      }
     } catch (err: any) {
       toast.error(err.message || 'Lỗi tải phiên học');
+      setSessions([]);
     } finally {
       setLoading(false);
     }
@@ -61,10 +72,12 @@ export default function AdminSessionsPage() {
     fetchSessions();
   };
 
-  const totalMinutes = sessions.reduce((acc, s) => acc + (s.duration || 0), 0);
-  const avgCompletion = sessions.length > 0
-    ? Math.round(sessions.reduce((acc, s) => acc + (s.completionPct || 0), 0) / sessions.length)
-    : 0;
+  // Safe Calculations
+  const sessionList = Array.isArray(sessions) ? sessions : [];
+  const totalMinutes = sessionList.reduce((acc, s) => acc + (s?.duration || s?.actualMinutes || 0), 0);
+  const avgCompletion = sessionList.length > 0
+    ? Math.round(sessionList.reduce((acc, s) => acc + (s?.completionPct || 0), 0) / sessionList.length)
+    : (summaryData?.avgCompletion || 0);
 
   return (
     <div className="space-y-6">
@@ -97,7 +110,7 @@ export default function AdminSessionsPage() {
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs text-slate-400 font-medium">Tổng Phiên Học Ghi Nhận</p>
-              <p className="text-2xl font-bold text-white mt-1">{sessions.length}</p>
+              <p className="text-2xl font-bold text-white mt-1">{sessionList.length}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">Các buổi học đã hoàn thành</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
@@ -197,14 +210,14 @@ export default function AdminSessionsPage() {
                     </div>
                   </td>
                 </tr>
-              ) : sessions.length === 0 ? (
+              ) : sessionList.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-500">
                     Chưa có phiên học nào được ghi nhận
                   </td>
                 </tr>
               ) : (
-                sessions.map((s) => (
+                sessionList.map((s) => (
                   <tr key={s.id} className="hover:bg-slate-800/40 transition-colors">
                     {/* User */}
                     <td className="py-3 px-4">

@@ -36,7 +36,8 @@ import {
 import { toast } from 'sonner';
 
 export default function AdminPaymentsPage() {
-  const [payments, setPayments] = useState<any[]>([]);
+    const [payments, setPayments] = useState<any[]>([]);
+  const [summaryData, setSummaryData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -57,9 +58,20 @@ export default function AdminPaymentsPage() {
       const res = await fetch(`/api/admin/payments?${params.toString()}`);
       if (!res.ok) throw new Error('Không thể tải lịch sử thanh toán');
       const data = await res.json();
-      setPayments(data || []);
+      
+      // Defensively parse array from either { payments: [...] } or direct array [...]
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.payments)
+        ? data.payments
+        : [];
+      setPayments(list);
+      if (data?.summary) {
+        setSummaryData(data.summary);
+      }
     } catch (err: any) {
       toast.error(err.message || 'Lỗi tải giao dịch');
+      setPayments([]);
     } finally {
       setLoading(false);
     }
@@ -95,16 +107,17 @@ export default function AdminPaymentsPage() {
     }
   };
 
-  // KPI Calculations
-  const totalRevenue = payments
-    .filter((p) => p.status === 'paid')
-    .reduce((acc, p) => acc + (p.amount || 0), 0);
-  const pendingRevenue = payments
-    .filter((p) => p.status === 'pending')
-    .reduce((acc, p) => acc + (p.amount || 0), 0);
-  const paidCount = payments.filter((p) => p.status === 'paid').length;
-  const pendingCount = payments.filter((p) => p.status === 'pending').length;
-  const cancelledCount = payments.filter((p) => p.status === 'cancelled').length;
+  // Safe KPI Calculations
+  const paymentList = Array.isArray(payments) ? payments : [];
+  const totalRevenue = summaryData?.totalPaid ?? paymentList
+    .filter((p) => p?.status === 'paid')
+    .reduce((acc, p) => acc + (p?.amount || 0), 0);
+  const pendingRevenue = summaryData?.totalPending ?? paymentList
+    .filter((p) => p?.status === 'pending')
+    .reduce((acc, p) => acc + (p?.amount || 0), 0);
+  const paidCount = paymentList.filter((p) => p?.status === 'paid').length;
+  const pendingCount = paymentList.filter((p) => p?.status === 'pending').length;
+  const cancelledCount = paymentList.filter((p) => p?.status === 'cancelled').length;
 
   return (
     <div className="space-y-6">
@@ -244,14 +257,14 @@ export default function AdminPaymentsPage() {
                     </div>
                   </td>
                 </tr>
-              ) : payments.length === 0 ? (
+              ) : paymentList.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-500">
                     Không tìm thấy giao dịch nào
                   </td>
                 </tr>
               ) : (
-                payments.map((p) => (
+                paymentList.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-800/40 transition-colors">
                     {/* Order code */}
                     <td className="py-3 px-4 font-mono font-semibold text-slate-200">

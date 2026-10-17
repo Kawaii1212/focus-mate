@@ -29,7 +29,7 @@ import {
 import { toast } from 'sonner';
 
 export default function AdminRoomsPage() {
-  const [rooms, setRooms] = useState<any[]>([]);
+    const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [cleaning, setCleaning] = useState(false);
   const [deleteRoomId, setDeleteRoomId] = useState<string | null>(null);
@@ -39,9 +39,15 @@ export default function AdminRoomsPage() {
       const res = await fetch('/api/admin/rooms');
       if (!res.ok) throw new Error('Không thể tải danh sách phòng');
       const data = await res.json();
-      setRooms(data || []);
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.rooms)
+        ? data.rooms
+        : [];
+      setRooms(list);
     } catch (err: any) {
       toast.error(err.message || 'Lỗi tải phòng học');
+      setRooms([]);
     } finally {
       setLoading(false);
     }
@@ -87,8 +93,9 @@ export default function AdminRoomsPage() {
     }
   };
 
-  const totalMembers = rooms.reduce((acc, r) => acc + (r.members?.length || 0), 0);
-  const activePomodoroCount = rooms.filter((r) => r.pomodoroIsActive).length;
+  const roomList = Array.isArray(rooms) ? rooms : [];
+  const totalMembers = roomList.reduce((acc, r) => acc + (Array.isArray(r?.members) ? r.members.length : 0), 0);
+  const activePomodoroCount = roomList.filter((r) => r?.pomodoroIsActive).length;
 
   return (
     <div className="space-y-6">
@@ -132,7 +139,7 @@ export default function AdminRoomsPage() {
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs text-slate-400 font-medium">Tổng Phòng Đang Mở</p>
-              <p className="text-2xl font-bold text-white mt-1">{rooms.length}</p>
+              <p className="text-2xl font-bold text-white mt-1">{roomList.length}</p>
             </div>
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
               <Video className="w-5 h-5" />
@@ -172,12 +179,12 @@ export default function AdminRoomsPage() {
             <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
             <p className="text-xs">Đang tải danh sách phòng trực tuyến...</p>
           </div>
-        ) : rooms.length === 0 ? (
+        ) : roomList.length === 0 ? (
           <div className="col-span-full py-16 text-center text-slate-500">
             Hiện không có phòng Co-Study nào đang mở
           </div>
         ) : (
-          rooms.map((room) => {
+          roomList.map((room) => {
             const memberCount = room.members?.length || 0;
             const minutesLeft = Math.floor((room.pomodoroTimeLeft || 0) / 60);
             const secondsLeft = (room.pomodoroTimeLeft || 0) % 60;

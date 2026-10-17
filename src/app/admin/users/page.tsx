@@ -43,6 +43,7 @@ import { toast } from 'sonner';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<any[]>([]);
+  const userList = Array.isArray(users) ? users : [];
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -99,7 +100,8 @@ export default function AdminUsersPage() {
       const res = await fetch(`/api/admin/users?${params.toString()}`);
       if (!res.ok) throw new Error('Không thể tải người dùng');
       const data = await res.json();
-      setUsers(data.users || []);
+      const list = Array.isArray(data?.users) ? data.users : (Array.isArray(data) ? data : []);
+      setUsers(list);
       setTotalPages(data.pagination?.totalPages || 1);
       setTotalCount(data.pagination?.total || 0);
     } catch (err: any) {
@@ -345,14 +347,14 @@ export default function AdminUsersPage() {
                     </div>
                   </td>
                 </tr>
-              ) : users.length === 0 ? (
+              ) : userList.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-500">
                     Không tìm thấy người dùng nào phù hợp với bộ lọc
                   </td>
                 </tr>
               ) : (
-                users.map((u) => {
+                userList.map((u) => {
                   const m = u.mascot;
                   return (
                     <tr key={u.id} className="hover:bg-slate-800/40 transition-colors">

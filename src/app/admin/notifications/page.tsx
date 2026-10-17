@@ -36,6 +36,7 @@ export default function AdminNotificationsPage() {
   const [sending, setSending] = useState(false);
 
   const [history, setHistory] = useState<any[]>([]);
+  const historyList = Array.isArray(history) ? history : [];
   const [loadingHistory, setLoadingHistory] = useState(true);
 
   const fetchHistory = async () => {
@@ -43,7 +44,8 @@ export default function AdminNotificationsPage() {
       const res = await fetch('/api/admin/notifications/broadcast');
       if (res.ok) {
         const data = await res.json();
-        setHistory(data || []);
+        const list = Array.isArray(data) ? data : (Array.isArray(data?.history) ? data.history : []);
+        setHistory(list);
       }
     } catch (err) {
       console.error(err);
@@ -256,14 +258,14 @@ export default function AdminNotificationsPage() {
                     Đang tải lịch sử...
                   </td>
                 </tr>
-              ) : history.length === 0 ? (
+              ) : historyList.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="py-8 text-center text-slate-500 text-xs">
                     Chưa có thông báo nào được lưu
                   </td>
                 </tr>
               ) : (
-                history.map((n) => (
+                historyList.map((n) => (
                   <tr key={n.id} className="hover:bg-slate-800/40 transition-colors">
                     <td className="py-3 px-4 max-w-sm">
                       <p className="font-semibold text-slate-200">{n.title}</p>

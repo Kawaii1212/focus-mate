@@ -20,6 +20,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useAdminAuth } from './adminAuth';
+import { AdminErrorBoundary } from './AdminErrorBoundary';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -223,7 +224,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Content Body */}
-        <div className="flex-1 p-4 md:p-8 space-y-6 max-w-7xl w-full mx-auto">{children}</div>
+        <div className="flex-1 p-4 md:p-8 space-y-6 max-w-7xl w-full mx-auto">
+          <AdminErrorBoundary>
+            {children}
+          </AdminErrorBoundary>
+        </div>
       </main>
     </div>
   );
