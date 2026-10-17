@@ -15,6 +15,7 @@ import {
   Crown,
   User,
   LogOut,
+  ShieldCheck,
   Settings as SettingsIcon
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -40,7 +41,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export default function Sidebar() {
-  const { dispatch } = useApp();
+  const { state, dispatch } = useApp();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -90,7 +91,16 @@ export default function Sidebar() {
       </nav>
 
       {/* Bottom */}
-      <div className="p-3 border-t border-sidebar-border">
+      <div className="p-3 border-t border-sidebar-border space-y-2">
+        {state.user?.role === 'admin' && (
+          <Link
+            href="/admin"
+            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 transition-all w-full"
+          >
+            <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <span>Admin Portal</span>
+          </Link>
+        )}
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all w-full"

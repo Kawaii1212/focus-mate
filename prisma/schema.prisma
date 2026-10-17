@@ -22,6 +22,7 @@ model User {
   createdAt          DateTime       @default(now())
   resetToken         String?
   resetTokenExpiry   DateTime?
+  role               String?        @default("user")
 
   mascot             Mascot?
   sessions           StudySession[]

@@ -4,6 +4,7 @@ import { useChat } from '@ai-sdk/react';
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, User, Sparkles, Calendar, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
@@ -12,10 +13,12 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useApp } from '@/store/AppContext';
 
 export function Chatbot() {
+  const pathname = usePathname();
   const { state: appState, dispatch } = useApp();
   const user = appState.user;
   const [isOpen, setIsOpen] = useState(false);
   const [localInput, setLocalInput] = useState('');
+  if (pathname?.startsWith('/admin')) return null;
 
   // ai-sdk/react v4.0+ signature
   const { messages, sendMessage, status, error, append } = (useChat as any)({
