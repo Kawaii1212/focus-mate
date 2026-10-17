@@ -3,20 +3,19 @@
 import React, { useEffect, useState } from 'react';
 import {
   Settings,
-  Server,
   Database,
-  Cpu,
-  ShieldCheck,
+  Key,
+  Server,
+  Activity,
+  CheckCircle2,
+  AlertTriangle,
   RefreshCw,
   Sparkles,
-  CheckCircle2,
-  AlertCircle,
-  Activity,
-  Layers,
-  Key,
+  HardDrive,
+  Cpu,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
@@ -27,11 +26,14 @@ export default function AdminSystemPage() {
 
   const fetchHealth = async () => {
     try {
+      setLoading(true);
       const res = await fetch('/api/admin/system');
-      const data = await res.json();
-      setHealth(data);
-    } catch (err: any) {
-      toast.error('Kh�ng th? ki?m tra s?c kh?e h? th?ng');
+      if (res.ok) {
+        const data = await res.json();
+        setHealth(data);
+      }
+    } catch (err) {
+      toast.error('Không thể kiểm tra sức khỏe hệ thống');
     } finally {
       setLoading(false);
     }
@@ -50,11 +52,11 @@ export default function AdminSystemPage() {
         body: JSON.stringify({ action: 'seed_sessions' }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'L?i kh?i t?o m?u');
-      toast.success(data.message || '�� t?o c�c phi�n h?c m?u th�nh c�ng!');
+      if (!res.ok) throw new Error(data.message || 'Lỗi khởi tạo mẫu');
+      toast.success(data.message || 'Đã tạo các phiên học mẫu thành công!');
       fetchHealth();
     } catch (err: any) {
-      toast.error(err.message || 'L?i t?o phi�n h?c m?u');
+      toast.error(err.message || 'Lỗi tạo phiên học mẫu');
     } finally {
       setSeeding(false);
     }
@@ -67,10 +69,10 @@ export default function AdminSystemPage() {
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
             <Settings className="w-5 h-5 text-indigo-400" />
-            <span>Tr?ng Th�i H? Th?ng & C?u H�nh M�y Ch?</span>
+            <span>Trạng Thái Hệ Thống & Cấu Hình Máy Chủ</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Gi�m s�t k?t n?i co s? d? li?u, c�c bi?n m�i tru?ng v� ti?n �ch b?o tr� n?n t?ng
+            Giám sát kết nối cơ sở dữ liệu, các biến môi trường và tiện ích bảo trì nền tảng
           </p>
         </div>
 
@@ -81,143 +83,125 @@ export default function AdminSystemPage() {
           className="bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800 rounded-xl text-xs h-9"
         >
           <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-          Ki?m tra l?i
+          Kiểm tra lại
         </Button>
       </div>
 
-      {/* Diagnostics Cards */}
+      {/* Health Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* DB Card */}
+        {/* PostgreSQL */}
         <Card className="bg-slate-900/80 border-slate-800 text-slate-100">
-          <CardContent className="p-4 space-y-3">
+          <CardContent className="p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-medium">PostgreSQL Database</span>
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                <Database className="w-4 h-4" />
-              </div>
+              <span className="text-xs text-slate-400 font-medium">Cơ Sở Dữ Liệu PostgreSQL</span>
+              <Database className="w-4 h-4 text-blue-400" />
             </div>
-
-            <div>
-              <div className="flex items-center gap-2">
-                <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs">
-                  {health?.database?.connected ? '�ang K?t N?i T?t' : 'M?t K?t N?i'}
-                </Badge>
-                <span className="text-xs text-slate-400 font-mono">
-                  {health?.database?.latencyMs}ms ping
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-2">
-                Nh� cung c?p: <span className="text-slate-200 font-medium">{health?.database?.provider}</span>
-              </p>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-bold text-white text-base">
+                {health?.database?.connected ? 'Đang Kết Nối Tốt' : 'Mất Kết Nối'}
+              </span>
+              <span className="text-xs font-mono text-emerald-400">
+                {health?.database?.latencyMs}ms ping
+              </span>
             </div>
+            <p className="text-xs text-slate-400">
+              Nhà cung cấp: <span className="text-slate-200 font-medium">{health?.database?.provider}</span>
+            </p>
           </CardContent>
         </Card>
 
-        {/* AI Card */}
+        {/* Gemini API Key */}
         <Card className="bg-slate-900/80 border-slate-800 text-slate-100">
-          <CardContent className="p-4 space-y-3">
+          <CardContent className="p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-medium">Google Gemini AI</span>
-              <div className="w-8 h-8 rounded-lg bg-violet-500/10 text-violet-400 flex items-center justify-center">
-                <Sparkles className="w-4 h-4" />
-              </div>
+              <span className="text-xs text-slate-400 font-medium">Cấu Hình Google Gemini AI</span>
+              <Key className="w-4 h-4 text-amber-400" />
             </div>
-
-            <div>
-              <Badge className="bg-violet-500/20 text-violet-400 border-violet-500/30 text-xs">
-                {health?.environment?.hasGeminiKey ? '�� C?u H�nh Kh�a API' : 'Chua C� Kh�a'}
-              </Badge>
-              <p className="text-[11px] text-slate-400 mt-2">
-                M?c d�ch: AI Chatbot gia su & Ph�n b? l?ch h?c AI Planner
-              </p>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+              <span className="font-bold text-white text-base">
+                {health?.environment?.hasGeminiKey ? 'Đã Cấu Hình Khóa API' : 'Chưa Có Khóa'}
+              </span>
             </div>
+            <p className="text-xs text-slate-400">
+              Mục đích: AI Chatbot gia sư & Phân bổ lịch học AI Planner
+            </p>
           </CardContent>
         </Card>
 
-        {/* Node Runtime Card */}
+        {/* Environment */}
         <Card className="bg-slate-900/80 border-slate-800 text-slate-100">
-          <CardContent className="p-4 space-y-3">
+          <CardContent className="p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400 font-medium">M�i Tru?ng V?n H�nh</span>
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-                <Cpu className="w-4 h-4" />
-              </div>
+              <span className="text-xs text-slate-400 font-medium">Môi Trường Vận Hành</span>
+              <Cpu className="w-4 h-4 text-violet-400" />
             </div>
-
-            <div>
-              <p className="text-sm font-bold text-white font-mono">
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-bold text-white text-base">
                 Node.js {health?.environment?.nodeVersion || 'v24'}
-              </p>
-              <p className="text-[11px] text-slate-400 mt-1">
-                N?n t?ng: <span className="font-mono text-slate-300">{health?.environment?.platform}</span> � Next.js 15
-              </p>
+              </span>
             </div>
+            <p className="text-xs text-slate-400">
+              Nền tảng: <span className="font-mono text-slate-300">{health?.environment?.platform}</span> • Next.js 15
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Database Entity Counts */}
-      <Card className="bg-slate-900/80 border-slate-800 text-slate-100">
+      {/* Table Counts */}
+      <Card className="bg-slate-900/90 border-slate-800 text-slate-100">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-white flex items-center gap-2">
-            <Layers className="w-4 h-4 text-indigo-400" />
-            <span>Th?ng K� B?ng D? Li?u Trong PostgreSQL</span>
-          </CardTitle>
+          <CardTitle className="text-base text-white">Thống Kê Bảng Dữ Liệu Trong PostgreSQL</CardTitle>
           <CardDescription className="text-xs text-slate-400">
-            S? lu?ng b?n ghi th?c t? du?c d?ng b? theo th?i gian th?c
+            Số lượng bản ghi thực tế được đồng bộ theo thời gian thực
           </CardDescription>
         </CardHeader>
-
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-              <p className="text-[11px] text-slate-400">Ngu?i D�ng (User)</p>
+              <p className="text-[11px] text-slate-400">Người Dùng (User)</p>
               <p className="text-xl font-bold text-white mt-1">{health?.metrics?.userCount || 0}</p>
             </div>
-
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-              <p className="text-[11px] text-slate-400">Linh V?t (Mascot)</p>
+              <p className="text-[11px] text-slate-400">Linh Vật (Mascot)</p>
               <p className="text-xl font-bold text-amber-400 mt-1">{health?.metrics?.mascotCount || 0}</p>
             </div>
-
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-              <p className="text-[11px] text-slate-400">Ph�ng H?c (ActiveRoom)</p>
+              <p className="text-[11px] text-slate-400">Phòng Học (ActiveRoom)</p>
               <p className="text-xl font-bold text-rose-400 mt-1">{health?.metrics?.roomCount || 0}</p>
             </div>
-
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-              <p className="text-[11px] text-slate-400">Giao D?ch (Payment)</p>
+              <p className="text-[11px] text-slate-400">Giao Dịch (Payment)</p>
               <p className="text-xl font-bold text-emerald-400 mt-1">{health?.metrics?.paymentCount || 0}</p>
             </div>
-
             <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
-              <p className="text-[11px] text-slate-400">Phi�n H?c (StudySession)</p>
+              <p className="text-[11px] text-slate-400">Phiên Học (StudySession)</p>
               <p className="text-xl font-bold text-violet-400 mt-1">{health?.metrics?.sessionCount || 0}</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Maintenance & Seed Utility */}
-      <Card className="bg-slate-900/80 border-slate-800 text-slate-100">
-        <CardHeader className="pb-3">
+      {/* Demo Seeder Tool */}
+      <Card className="bg-slate-900/90 border-slate-800 text-slate-100">
+        <CardHeader>
           <CardTitle className="text-base text-white flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400" />
-            <span>Ti?n �ch Kh?i T?o D? Li?u Tr?c Quan (Demo Data Generator)</span>
+            <span>Tiện Ích Khởi Tạo Dữ Liệu Trực Quan (Demo Data Generator)</span>
           </CardTitle>
           <CardDescription className="text-xs text-slate-400">
-            N?u co s? d? li?u hi?n t?i chua c� nhi?u phi�n h?c Pomodoro th?c t?, b?n c� th? t?o 15 phi�n h?c m?u d? c�c bi?u d? th?ng k� hi?n th? d?y d?, sinh d?ng.
+            Nếu cơ sở dữ liệu hiện tại chưa có nhiều phiên học Pomodoro thực tế, bạn có thể tạo 15 phiên học mẫu để các biểu đồ thống kê hiển thị đầy đủ, sinh động.
           </CardDescription>
         </CardHeader>
-
-        <CardContent className="pt-2">
+        <CardContent>
           <Button
             onClick={handleSeedSessions}
             disabled={seeding}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs h-10 px-5 font-semibold flex items-center gap-2 shadow-lg shadow-indigo-600/25"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs h-10 px-5 font-semibold shadow-lg shadow-indigo-600/20 flex items-center gap-2"
           >
             <Sparkles className={`w-4 h-4 ${seeding ? 'animate-spin' : ''}`} />
-            <span>{seeding ? '�ang t?o d? li?u...' : 'Kh?i T?o 15 Phi�n H?c M?u Cho Sinh Vi�n'}</span>
+            <span>{seeding ? 'Đang tạo dữ liệu...' : 'Khởi Tạo 15 Phiên Học Mẫu Cho Sinh Viên'}</span>
           </Button>
         </CardContent>
       </Card>

@@ -25,13 +25,13 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 
 const ADMIN_NAV = [
-  { href: '/admin', label: 'T?ng Quan', icon: LayoutDashboard },
-  { href: '/admin/users', label: 'Ngu?i D�ng', icon: Users },
-  { href: '/admin/rooms', label: 'Ph�ng Co-Study', icon: Video },
-  { href: '/admin/payments', label: 'Giao D?ch & Thu', icon: CreditCard },
-  { href: '/admin/sessions', label: 'Phi�n H?c Pomodoro', icon: Timer },
-  { href: '/admin/notifications', label: 'Ph�t Th�ng B�o', icon: Bell },
-  { href: '/admin/system', label: 'H? Th?ng & Status', icon: Settings },
+  { href: '/admin', label: 'Tổng Quan', icon: LayoutDashboard },
+  { href: '/admin/users', label: 'Người Dùng', icon: Users },
+  { href: '/admin/rooms', label: 'Phòng Co-Study', icon: Video },
+  { href: '/admin/payments', label: 'Giao Dịch & Thu', icon: CreditCard },
+  { href: '/admin/sessions', label: 'Phiên Học Pomodoro', icon: Timer },
+  { href: '/admin/notifications', label: 'Phát Thông Báo', icon: Bell },
+  { href: '/admin/system', label: 'Hệ Thống & Status', icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -58,7 +58,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => clearInterval(interval);
   }, []);
 
-  // If on login page, render bare layout
   if (pathname === '/admin/login') {
     return <div className="min-h-screen bg-slate-950 text-slate-100">{children}</div>;
   }
@@ -67,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-200">
         <div className="w-12 h-12 rounded-2xl border-4 border-indigo-500 border-t-transparent animate-spin mb-4" />
-        <p className="text-sm font-medium tracking-wide">�ang x�c th?c quy?n Admin...</p>
+        <p className="text-sm font-medium tracking-wide">Đang xác thực quyền Admin...</p>
       </div>
     );
   }
@@ -130,7 +129,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span className="font-medium text-slate-300">H? Th?ng Live</span>
+            <span className="font-medium text-slate-300">Hệ Thống Live</span>
           </div>
           <span className="font-mono text-slate-400 text-[11px]">{timeStr}</span>
         </div>
@@ -165,7 +164,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 hover:text-white transition-all border border-slate-700/60"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Quay l?i ?ng d?ng ch�nh</span>
+            <span>Quay lại ứng dụng chính</span>
           </Link>
 
           {/* Admin Profile */}
@@ -183,7 +182,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
             <button
               onClick={logoutAdmin}
-              title="�ang xu?t Admin"
+              title="Đăng xuất Admin"
               className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all"
             >
               <LogOut className="w-4 h-4" />
@@ -198,7 +197,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <header className="hidden md:flex items-center justify-between px-8 py-4 bg-slate-900/60 backdrop-blur border-b border-slate-800/80 sticky top-0 z-30">
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-bold text-slate-100 tracking-tight">
-              {ADMIN_NAV.find((n) => n.href === pathname)?.label || 'B?ng Qu?n Tr?'}
+              {ADMIN_NAV.find((n) => n.href === pathname)?.label || 'Bảng Quản Trị'}
             </h1>
             <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
               FocusMate Admin v2.0
@@ -208,8 +207,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
               <Activity className="w-3.5 h-3.5 text-emerald-400" />
-              <span>M�y ch?: Supabase Tokyo</span>
-              <span className="text-slate-600">�</span>
+              <span>Máy chủ: Supabase Tokyo</span>
+              <span className="text-slate-600">•</span>
               <span className="font-mono text-emerald-400">99.9% Uptime</span>
             </div>
 
@@ -218,7 +217,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md shadow-indigo-600/20 flex items-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Xem App H?c Vi�n</span>
+              <span>Xem App Học Viên</span>
             </Link>
           </div>
         </header>

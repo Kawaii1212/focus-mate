@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const { title, body: messageBody, type = 'system', target = 'all', url } = body;
 
     if (!title || !messageBody) {
-      return NextResponse.json({ message: 'Vui l�ng nh?p ti�u d? v� n?i dung th�ng b�o' }, { status: 400 });
+      return NextResponse.json({ message: 'Vui lòng nhập tiêu đề và nội dung thông báo' }, { status: 400 });
     }
 
     const whereUser: any = {};
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     });
 
     if (recipients.length === 0) {
-      return NextResponse.json({ message: 'Kh�ng c� ngu?i d�ng n�o kh?p v?i d?i tu?ng nh?n' }, { status: 400 });
+      return NextResponse.json({ message: 'Không có người dùng nào khớp với đối tượng nhận' }, { status: 400 });
     }
 
     // Insert notifications for each user
@@ -41,12 +41,12 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `�� g?i th�ng b�o th�nh c�ng t?i ${recipients.length} ngu?i d�ng!`,
+      message: `Đã gửi thông báo thành công tới ${recipients.length} người dùng!`,
       sentCount: recipients.length,
     });
   } catch (error) {
     console.error('Admin broadcast notification error:', error);
-    return NextResponse.json({ message: 'L?i ph�t th�ng b�o h? th?ng' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi phát thông báo hệ thống' }, { status: 500 });
   }
 }
 
@@ -61,6 +61,6 @@ export async function GET() {
     });
     return NextResponse.json(recent);
   } catch (error) {
-    return NextResponse.json({ message: 'L?i t?i l?ch s? th�ng b�o' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi tải lịch sử thông báo' }, { status: 500 });
   }
 }

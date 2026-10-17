@@ -36,6 +36,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ us
     return NextResponse.json(mascot);
   } catch (error) {
     console.error('Admin mascot update error:', error);
-    return NextResponse.json({ message: 'L?i c?p nh?t linh v?t' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi cập nhật linh vật' }, { status: 500 });
   }
 }

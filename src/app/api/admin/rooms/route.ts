@@ -21,7 +21,7 @@ export async function GET() {
     return NextResponse.json(rooms);
   } catch (error) {
     console.error('Admin rooms GET error:', error);
-    return NextResponse.json({ message: 'L?i t?i danh s�ch ph�ng h?c' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi tải danh sách phòng học' }, { status: 500 });
   }
 }
 
@@ -32,24 +32,20 @@ export async function POST(request: Request) {
 
     if (action === 'cleanup') {
       // Remove rooms with 0 members
-      const emptyRooms = await prisma.activeRoom.findMany({
-        where: { members: { none: {} } },
-      });
-
       const deleted = await prisma.activeRoom.deleteMany({
         where: { members: { none: {} } },
       });
 
       return NextResponse.json({
         success: true,
-        message: `�� d?n d?p ${deleted.count} ph�ng kh�ng c� th�nh vi�n`,
+        message: `Đã dọn dẹp ${deleted.count} phòng không có thành viên`,
         count: deleted.count,
       });
     }
 
-    return NextResponse.json({ message: 'H�nh d?ng kh�ng h?p l?' }, { status: 400 });
+    return NextResponse.json({ message: 'Hành động không hợp lệ' }, { status: 400 });
   } catch (error) {
     console.error('Admin rooms POST error:', error);
-    return NextResponse.json({ message: 'L?i d?n d?p ph�ng' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi dọn dẹp phòng' }, { status: 500 });
   }
 }

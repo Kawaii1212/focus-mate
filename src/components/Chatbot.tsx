@@ -18,7 +18,6 @@ export function Chatbot() {
   const user = appState.user;
   const [isOpen, setIsOpen] = useState(false);
   const [localInput, setLocalInput] = useState('');
-  if (pathname?.startsWith('/admin')) return null;
 
   // ai-sdk/react v4.0+ signature
   const { messages, sendMessage, status, error, append } = (useChat as any)({
@@ -87,6 +86,8 @@ export function Chatbot() {
   }, [messages, dispatch]);
 
   const displayName = user?.name || 'bạn';
+
+  if (pathname?.startsWith('/admin')) return null;
 
   return (
     <div className="fixed bottom-6 right-6 z-[100]">

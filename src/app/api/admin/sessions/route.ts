@@ -53,6 +53,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('Admin sessions GET error:', error);
-    return NextResponse.json({ message: 'L?i t?i danh s�ch phi�n h?c' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi tải danh sách phiên học' }, { status: 500 });
   }
 }

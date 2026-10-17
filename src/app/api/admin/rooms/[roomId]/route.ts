@@ -9,9 +9,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ r
       where: { id: roomId },
     });
 
-    return NextResponse.json({ success: true, message: '�� gi?i t�n ph�ng th�nh c�ng' });
+    return NextResponse.json({ success: true, message: 'Đã giải tán phòng thành công' });
   } catch (error) {
     console.error('Admin room DELETE error:', error);
-    return NextResponse.json({ message: 'L?i gi?i t�n ph�ng' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi giải tán phòng' }, { status: 500 });
   }
 }

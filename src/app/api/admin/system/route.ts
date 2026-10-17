@@ -58,17 +58,17 @@ export async function POST(request: Request) {
     if (action === 'seed_sessions') {
       const users = await prisma.user.findMany({ take: 10 });
       if (users.length === 0) {
-        return NextResponse.json({ message: 'Chua c� user d? t?o m?u' }, { status: 400 });
+        return NextResponse.json({ message: 'Chưa có user để tạo mẫu' }, { status: 400 });
       }
 
       const tasks = [
-        '�n thi Gi?a K? Gi?i T�ch',
-        'L?p tr�nh Web Next.js & Prisma',
-        'Luy?n nghe IELTS Cambridge 18',
-        '�?c s�ch Clean Code Chuong 4',
-        'Th?c h�nh Thu?t To�n LeetCode',
-        'L�m ti?u lu?n Kinh T? Lu?ng',
-        'H?c t? v?ng HSK 4',
+        'Ôn thi Giữa Kỳ Giải Tích',
+        'Lập trình Web Next.js & Prisma',
+        'Luyện nghe IELTS Cambridge 18',
+        'Đọc sách Clean Code Chương 4',
+        'Thực hành Thuật Toán LeetCode',
+        'Làm tiểu luận Kinh Tế Lượng',
+        'Học từ vựng HSK 4',
       ];
 
       const createdSessions = [];
@@ -104,13 +104,13 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: `�� t?o th�nh c�ng ${createdSessions.length} phi�n h?c m?u!`,
+        message: `Đã tạo thành công ${createdSessions.length} phiên học mẫu!`,
       });
     }
 
-    return NextResponse.json({ message: 'Action kh�ng x�c d?nh' }, { status: 400 });
+    return NextResponse.json({ message: 'Action không xác định' }, { status: 400 });
   } catch (error) {
     console.error('System POST error:', error);
-    return NextResponse.json({ message: 'L?i th?c hi?n t�c v?' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi thực hiện tác vụ' }, { status: 500 });
   }
 }

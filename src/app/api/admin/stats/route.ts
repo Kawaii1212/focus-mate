@@ -77,12 +77,12 @@ export async function GET() {
     });
 
     const personaNames: Record<number, string> = {
-      0: 'C�o Foxy (C�n B?ng)',
-      1: 'C� Owwly (Cham Ch?)',
-      2: 'G?u Panda (B?n B?)',
-      3: 'M�o Neko (Nang �?ng)',
-      4: 'Th? BunBun (Nh? Nh�ng)',
-      5: 'R?ng Spark (Chi?n Binh)',
+      0: 'Cáo Foxy (Cân Bằng)',
+      1: 'Cú Owwly (Chăm Chỉ)',
+      2: 'Gấu Panda (Bền Bỉ)',
+      3: 'Mèo Neko (Năng Động)',
+      4: 'Thỏ BunBun (Nhẹ Nhàng)',
+      5: 'Rồng Spark (Chiến Binh)',
     };
 
     const mascotDistribution = Object.keys(personaMap).map((key) => ({
@@ -152,12 +152,12 @@ export async function GET() {
         growthTrend,
         mascotDistribution,
         planDistribution: [
-          { name: 'G�i Th�ng (49k)', count: monthlyCount, color: '#38bdf8' },
-          { name: 'G�i Nam (399k)', count: yearlyCount, color: '#818cf8' },
-          { name: 'Ngu?i d�ng Mi?n Ph�', count: Math.max(0, totalUsers - premiumUsers), color: '#94a3b8' },
+          { name: 'Gói Tháng (49k)', count: monthlyCount, color: '#38bdf8' },
+          { name: 'Gói Năm (399k)', count: yearlyCount, color: '#818cf8' },
+          { name: 'Người dùng Miễn Phí', count: Math.max(0, totalUsers - premiumUsers), color: '#94a3b8' },
         ],
         habitStats: habitStats.map((h) => ({
-          habit: h.studyHabit || 'Chua ch?n',
+          habit: h.studyHabit || 'Chưa chọn',
           count: h._count.id,
         })),
         timeStats: timeStats.map((t) => ({
@@ -174,6 +174,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Admin stats error:', error);
-    return NextResponse.json({ message: 'L?i t?i d? li?u th?ng k�' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi tải dữ liệu thống kê' }, { status: 500 });
   }
 }

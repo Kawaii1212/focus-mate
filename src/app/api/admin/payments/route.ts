@@ -57,6 +57,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('Admin payments GET error:', error);
-    return NextResponse.json({ message: 'L?i t?i danh s�ch thanh to�n' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi tải danh sách thanh toán' }, { status: 500 });
   }
 }

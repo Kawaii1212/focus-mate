@@ -17,13 +17,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ user
     });
 
     if (!user) {
-      return NextResponse.json({ message: 'Kh�ng t�m th?y ngu?i d�ng' }, { status: 404 });
+      return NextResponse.json({ message: 'Không tìm thấy người dùng' }, { status: 404 });
     }
 
     return NextResponse.json(user);
   } catch (error) {
     console.error('Admin user detail GET error:', error);
-    return NextResponse.json({ message: 'L?i t?i th�ng tin chi ti?t' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi tải thông tin chi tiết' }, { status: 500 });
   }
 }
 
@@ -50,7 +50,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ us
     return NextResponse.json(updated);
   } catch (error) {
     console.error('Admin user PATCH error:', error);
-    return NextResponse.json({ message: 'L?i c?p nh?t ngu?i d�ng' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi cập nhật người dùng' }, { status: 500 });
   }
 }
 
@@ -62,9 +62,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ u
       where: { id: userId },
     });
 
-    return NextResponse.json({ success: true, message: '�� x�a ngu?i d�ng th�nh c�ng' });
+    return NextResponse.json({ success: true, message: 'Đã xóa người dùng thành công' });
   } catch (error) {
     console.error('Admin user DELETE error:', error);
-    return NextResponse.json({ message: 'L?i x�a ngu?i d�ng' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi xóa người dùng' }, { status: 500 });
   }
 }

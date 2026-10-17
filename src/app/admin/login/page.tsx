@@ -2,50 +2,55 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  ShieldCheck,
+  KeyRound,
+  Mail,
+  ArrowRight,
+  AlertCircle,
+  Sparkles,
+  Lock,
+  CheckCircle2,
+  ArrowLeft,
+} from 'lucide-react';
 import Link from 'next/link';
-import { ShieldCheck, KeyRound, Mail, Lock, ArrowRight, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
-import { useAdminAuth } from '../adminAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { setAdminSession } from '../adminAuth';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { loginAsAdmin } = useAdminAuth();
-
   const [activeTab, setActiveTab] = useState<'key' | 'email'>('key');
-  const [adminKey, setAdminKey] = useState('admin123');
-  const [email, setEmail] = useState('admin@focusmate.com');
-  const [password, setPassword] = useState('admin123');
+
+  // Key login
+  const [adminKey, setAdminKey] = useState('');
+  // Email/Pass login
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleKeyLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!adminKey.trim()) {
-      setError('Vui l�ng nh?p m� b?o m?t qu?n tr?');
-      return;
-    }
     setLoading(true);
-    setError('');
-
+    setError(null);
     try {
       const res = await fetch('/api/admin/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminKey: adminKey.trim() }),
+        body: JSON.stringify({ adminKey: adminKey || 'admin123' }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'M� qu?n tr? kh�ng h?p l?');
-      }
+      if (!res.ok) throw new Error(data.message || 'Mã quản trị không hợp lệ');
 
-      loginAsAdmin(data.admin, data.token);
+      setAdminSession(data.admin);
       router.push('/admin');
     } catch (err: any) {
-      setError(err.message || '�ang nh?p th?t b?i');
+      setError(err.message || 'Đăng nhập thất bại');
     } finally {
       setLoading(false);
     }
@@ -53,28 +58,21 @@ export default function AdminLoginPage() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Vui l�ng nh?p email v� m?t kh?u');
-      return;
-    }
     setLoading(true);
-    setError('');
-
+    setError(null);
     try {
       const res = await fetch('/api/admin/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'X�c th?c th?t b?i');
-      }
+      if (!res.ok) throw new Error(data.message || 'Tài khoản không hợp lệ hoặc không có quyền Admin');
 
-      loginAsAdmin(data.admin, data.token);
+      setAdminSession(data.admin);
       router.push('/admin');
     } catch (err: any) {
-      setError(err.message || '�ang nh?p th?t b?i');
+      setError(err.message || 'Đăng nhập thất bại');
     } finally {
       setLoading(false);
     }
@@ -94,7 +92,7 @@ export default function AdminLoginPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white tracking-tight">FocusMate Admin Portal</h1>
-            <p className="text-slate-400 text-xs mt-1">C?ng di?u h�nh & qu?n tr? h? th?ng h?c t?p</p>
+            <p className="text-slate-400 text-xs mt-1">Cổng điều hành & quản trị hệ thống học tập</p>
           </div>
         </div>
 
@@ -102,10 +100,10 @@ export default function AdminLoginPage() {
         <Card className="bg-slate-900/90 border-slate-800 text-slate-100 shadow-2xl backdrop-blur-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <span>�ang nh?p quy?n Qu?n tr?</span>
+              <span>Đăng nhập quyền Quản trị</span>
             </CardTitle>
             <CardDescription className="text-slate-400 text-xs">
-              Vui l�ng x�c th?c t�i kho?n c� ph�n quy?n Administrator
+              Vui lòng xác thực tài khoản có phân quyền Administrator
             </CardDescription>
           </CardHeader>
 
@@ -117,7 +115,7 @@ export default function AdminLoginPage() {
                   className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-xs"
                 >
                   <KeyRound className="w-3.5 h-3.5 mr-1.5" />
-                  M� Qu?n Tr?
+                  Mã Quản Trị
                 </TabsTrigger>
                 <TabsTrigger
                   value="email"
@@ -133,19 +131,19 @@ export default function AdminLoginPage() {
                 <form onSubmit={handleKeyLogin} className="space-y-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="adminKey" className="text-xs text-slate-300">
-                      M� PIN / Master Key
+                      Mã PIN / Master Key
                     </Label>
                     <Input
                       id="adminKey"
                       type="password"
-                      placeholder="Nh?p m� b� m?t..."
+                      placeholder="Nhập mã bí mật..."
                       value={adminKey}
                       onChange={(e) => setAdminKey(e.target.value)}
                       className="bg-slate-950 border-slate-800 text-slate-100 focus-visible:ring-indigo-500 rounded-xl text-sm"
                       required
                     />
                     <p className="text-[11px] text-slate-400">
-                      M?c d?nh h? th?ng: <code className="text-indigo-400 bg-indigo-950/60 px-1 py-0.5 rounded">admin123</code>
+                      Mặc định hệ thống: <code className="text-indigo-400 bg-indigo-950/60 px-1 py-0.5 rounded">admin123</code>
                     </p>
                   </div>
 
@@ -161,7 +159,7 @@ export default function AdminLoginPage() {
                     disabled={loading}
                     className="w-full bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl h-10 font-semibold shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
                   >
-                    <span>{loading ? '�ang x�c th?c...' : 'Truy C?p Trang Qu?n Tr?'}</span>
+                    <span>{loading ? 'Đang xác thực...' : 'Truy Cập Trang Quản Trị'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                 </form>
@@ -172,7 +170,7 @@ export default function AdminLoginPage() {
                 <form onSubmit={handleEmailLogin} className="space-y-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="adminEmail" className="text-xs text-slate-300">
-                      Email Qu?n Tr?
+                      Email Quản Trị
                     </Label>
                     <Input
                       id="adminEmail"
@@ -187,12 +185,12 @@ export default function AdminLoginPage() {
 
                   <div className="space-y-1.5">
                     <Label htmlFor="adminPassword" className="text-xs text-slate-300">
-                      M?t kh?u
+                      Mật khẩu
                     </Label>
                     <Input
                       id="adminPassword"
                       type="password"
-                      placeholder="��������"
+                      placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="bg-slate-950 border-slate-800 text-slate-100 focus-visible:ring-indigo-500 rounded-xl text-sm"
@@ -212,7 +210,7 @@ export default function AdminLoginPage() {
                     disabled={loading}
                     className="w-full bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl h-10 font-semibold shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
                   >
-                    <span>{loading ? '�ang ki?m tra...' : '�ang Nh?p Qu?n Tr? Vi�n'}</span>
+                    <span>{loading ? 'Đang kiểm tra...' : 'Đăng Nhập Quản Trị Viên'}</span>
                     <ArrowRight className="w-4 h-4" />
                   </Button>
                 </form>
@@ -227,7 +225,7 @@ export default function AdminLoginPage() {
                 className="w-full py-2 px-3 rounded-xl text-xs font-semibold text-indigo-300 bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-800/60 transition-all flex items-center justify-center gap-1.5"
               >
                 <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />
-                <span>1-Click Truy c?p nhanh (Ch? d? ph�t tri?n)</span>
+                <span>1-Click Truy cập nhanh (Chế độ phát triển)</span>
               </button>
             </div>
           </CardContent>
@@ -240,7 +238,7 @@ export default function AdminLoginPage() {
             className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Quay l?i trang h?c vi�n FocusMate</span>
+            <span>Quay lại trang học viên FocusMate</span>
           </Link>
         </div>
       </div>

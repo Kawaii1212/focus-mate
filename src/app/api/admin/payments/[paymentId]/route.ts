@@ -12,7 +12,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pa
     });
 
     if (!payment) {
-      return NextResponse.json({ message: 'Kh�ng t�m th?y giao d?ch' }, { status: 404 });
+      return NextResponse.json({ message: 'Không tìm thấy giao dịch' }, { status: 404 });
     }
 
     const updated = await prisma.payment.update({
@@ -44,11 +44,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ pa
 
     return NextResponse.json({
       success: true,
-      message: `�� c?p nh?t tr?ng th�i don h�ng sang ${status}`,
+      message: `Đã cập nhật trạng thái đơn hàng sang ${status}`,
       payment: updated,
     });
   } catch (error) {
     console.error('Admin payment PATCH error:', error);
-    return NextResponse.json({ message: 'L?i c?p nh?t giao d?ch' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi cập nhật giao dịch' }, { status: 500 });
   }
 }

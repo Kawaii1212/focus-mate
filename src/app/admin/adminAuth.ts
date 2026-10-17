@@ -11,6 +11,13 @@ export interface AdminUser {
   isPremium?: boolean;
 }
 
+export function setAdminSession(adminUser: AdminUser, token?: string) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('fm_admin_user', JSON.stringify(adminUser));
+    if (token) localStorage.setItem('fm_admin_token', token);
+  }
+}
+
 export function useAdminAuth() {
   const router = useRouter();
   const [admin, setAdmin] = useState<AdminUser | null>(null);
@@ -48,14 +55,15 @@ export function useAdminAuth() {
   }, []);
 
   const loginAsAdmin = (adminUser: AdminUser, token?: string) => {
-    localStorage.setItem('fm_admin_user', JSON.stringify(adminUser));
-    if (token) localStorage.setItem('fm_admin_token', token);
+    setAdminSession(adminUser, token);
     setAdmin(adminUser);
   };
 
   const logoutAdmin = () => {
-    localStorage.removeItem('fm_admin_user');
-    localStorage.removeItem('fm_admin_token');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('fm_admin_user');
+      localStorage.removeItem('fm_admin_token');
+    }
     setAdmin(null);
     router.push('/admin/login');
   };

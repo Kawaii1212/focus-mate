@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     }
 
     if (!email) {
-      return NextResponse.json({ message: 'Vui l�ng cung c?p email ho?c m� qu?n tr?' }, { status: 400 });
+      return NextResponse.json({ message: 'Vui lòng cung cấp email hoặc mã quản trị' }, { status: 400 });
     }
 
     const user: any = await prisma.user.findUnique({
@@ -31,16 +31,16 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
-      return NextResponse.json({ message: 'T�i kho?n qu?n tr? kh�ng t?n t?i' }, { status: 404 });
+      return NextResponse.json({ message: 'Tài khoản quản trị không tồn tại' }, { status: 404 });
     }
 
     if (user.passwordHash !== password) {
-      return NextResponse.json({ message: 'M?t kh?u qu?n tr? kh�ng ch�nh x�c' }, { status: 401 });
+      return NextResponse.json({ message: 'Mật khẩu quản trị không chính xác' }, { status: 401 });
     }
 
     if (user.role !== 'admin') {
       return NextResponse.json(
-        { message: 'T�i kho?n n�y kh�ng c� quy?n truy c?p trang qu?n tr?' },
+        { message: 'Tài khoản này không có quyền truy cập trang quản trị' },
         { status: 403 }
       );
     }
@@ -58,6 +58,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Admin auth error:', error);
-    return NextResponse.json({ message: 'L?i x�c th?c h? th?ng' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi xác thực hệ thống' }, { status: 500 });
   }
 }

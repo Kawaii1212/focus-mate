@@ -64,57 +64,56 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('Admin users GET error:', error);
-    return NextResponse.json({ message: 'L?i t?i danh s�ch ngu?i d�ng' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi tải danh sách người dùng' }, { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, password, role = 'user', isPremium = false, studyHabit = 'Pomodoro', goal = 'T?p trung h?c t?p', preferredTime = 'evening' } = body;
+    const { name, email, password, role = 'user', isPremium = false, studyHabit = 'Pomodoro', goal = 'Tập trung học tập', preferredTime = 'evening' } = body;
 
     if (!name || !email || !password) {
-      return NextResponse.json({ message: 'Vui l�ng di?n d?y d? t�n, email v� m?t kh?u' }, { status: 400 });
+      return NextResponse.json({ message: 'Vui lòng điền đầy đủ tên, email và mật khẩu' }, { status: 400 });
     }
 
     const existing = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
     if (existing) {
-      return NextResponse.json({ message: 'Email n�y d� du?c s? d?ng' }, { status: 409 });
+      return NextResponse.json({ message: 'Email này đã được sử dụng' }, { status: 409 });
     }
 
     const createData: any = {
-        name,
-        email: email.trim().toLowerCase(),
-        passwordHash: password,
-        role,
-        isPremium: Boolean(isPremium),
-        studyHabit,
-        goal,
-        preferredTime,
-        onboardingComplete: true,
-        mascot: {
-          create: {
-            personaId: '0',
-            stage: 'baby',
-            level: 1,
-            exp: 0,
-            expToNextLevel: 100,
-            coin: 100,
-            energy: 100,
-            streakShields: 2,
-            name: 'Mascot c?a ' + name,
-          },
+      name,
+      email: email.trim().toLowerCase(),
+      passwordHash: password,
+      role,
+      isPremium: Boolean(isPremium),
+      studyHabit,
+      goal,
+      preferredTime,
+      onboardingComplete: true,
+      mascot: {
+        create: {
+          personaId: '0',
+          stage: 'baby',
+          level: 1,
+          exp: 0,
+          expToNextLevel: 100,
+          coin: 100,
+          energy: 100,
+          streakShields: 2,
+          name: 'Mascot của ' + name,
         },
-      };
+      },
+    };
     const user = await prisma.user.create({
       data: createData,
-
       include: { mascot: true },
     });
 
     return NextResponse.json(user, { status: 201 });
   } catch (error) {
     console.error('Admin user create error:', error);
-    return NextResponse.json({ message: 'L?i t?o ngu?i d�ng m?i' }, { status: 500 });
+    return NextResponse.json({ message: 'Lỗi tạo người dùng mới' }, { status: 500 });
   }
 }

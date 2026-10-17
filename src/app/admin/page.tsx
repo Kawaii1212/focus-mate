@@ -4,24 +4,20 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Users,
-  Crown,
   CreditCard,
   Timer,
   Video,
   Sparkles,
   TrendingUp,
-  ArrowUpRight,
-  RefreshCw,
-  PlusCircle,
-  Bell,
-  Trash2,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
+  Award,
+  Crown,
   ChevronRight,
-  ExternalLink,
+  RefreshCw,
+  Bell,
+  ArrowUpRight,
+  Flame,
 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -32,14 +28,14 @@ export default function AdminOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchData = async () => {
+  const fetchStats = async () => {
     try {
       const res = await fetch('/api/admin/stats');
-      if (!res.ok) throw new Error('Kh�ng th? t?i d? li?u th?ng k�');
+      if (!res.ok) throw new Error('Không thể tải dữ liệu thống kê');
       const json = await res.json();
       setData(json);
     } catch (err: any) {
-      toast.error(err.message || 'L?i k?t n?i m�y ch?');
+      toast.error(err.message || 'Lỗi kết nối máy chủ');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -47,19 +43,19 @@ export default function AdminOverviewPage() {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchStats();
   }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchData();
+    fetchStats();
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-slate-400">�ang t?ng h?p d? li?u to�n h? th?ng...</p>
+      <div className="py-20 flex flex-col items-center justify-center text-slate-400">
+        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
+        <p className="text-sm text-slate-400">Đang tổng hợp dữ liệu toàn hệ thống...</p>
       </div>
     );
   }
@@ -70,249 +66,249 @@ export default function AdminOverviewPage() {
 
   return (
     <div className="space-y-8">
-      {/* Top Banner / Welcome */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-gradient-to-r from-indigo-950/70 via-slate-900 to-slate-900 border border-indigo-900/40 relative overflow-hidden">
-        <div className="relative z-10 space-y-1">
-          <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Ch�o m?ng quay tr? l?i, Admin! ??</h2>
-            <Badge className="bg-indigo-600/30 text-indigo-300 border-indigo-500/30 text-xs">
-              Live Monitor
-            </Badge>
+      {/* Header Welcome banner */}
+      <div className="relative overflow-hidden p-6 md:p-8 rounded-2xl bg-gradient-to-r from-indigo-950/80 via-slate-900/90 to-slate-900 border border-indigo-800/40 shadow-xl">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-white tracking-tight">Chào mừng quay trở lại, Admin! 👋</h2>
+              <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30 text-[10px] uppercase">
+                Live Monitor
+              </Badge>
+            </div>
+            <p className="text-xs md:text-sm text-slate-300 max-w-2xl">
+              Hệ thống FocusMate đang vận hành ổn định. Dưới đây là bức tranh tổng quan hôm nay.
+            </p>
           </div>
-          <p className="text-slate-400 text-sm">
-            H? th?ng FocusMate dang v?n h�nh ?n d?nh. Du?i d�y l� b?c tranh t?ng quan h�m nay.
-          </p>
-        </div>
 
-        <div className="flex items-center gap-3 relative z-10">
-          <Button
-            onClick={handleRefresh}
-            variant="outline"
-            size="sm"
-            disabled={refreshing}
-            className="bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700 hover:text-white rounded-xl text-xs flex items-center gap-2"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>L�m m?i s? li?u</span>
-          </Button>
-
-          <Link href="/admin/users">
+          <div className="flex items-center gap-2.5">
             <Button
+              onClick={handleRefresh}
+              variant="outline"
               size="sm"
-              className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-indigo-600/20"
+              disabled={refreshing}
+              className="bg-slate-900/80 border-slate-700 text-slate-300 hover:text-white rounded-xl text-xs h-9"
             >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span>Qu?n l� User</span>
+              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span>Làm mới số liệu</span>
             </Button>
-          </Link>
+
+            <Link href="/admin/users">
+              <Button
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs h-9 shadow-lg shadow-indigo-600/25 font-semibold flex items-center gap-1.5"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Quản lý User</span>
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        {/* Card 1: Users */}
-        <Card className="bg-slate-900/80 border-slate-800 text-slate-100 shadow-md">
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 md:gap-4">
+        {/* Total Users */}
+        <Card className="bg-slate-900/80 border-slate-800 text-slate-100 hover:border-slate-700 transition-all">
           <CardContent className="p-4 space-y-2">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-medium">T?ng Ngu?i D�ng</span>
-              <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
+              <span className="text-xs font-medium">Tổng Người Dùng</span>
+              <div className="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center">
                 <Users className="w-4 h-4" />
               </div>
             </div>
             <div>
               <p className="text-2xl font-bold text-white tracking-tight">{summary.totalUsers || 0}</p>
-              <p className="text-[11px] text-emerald-400 flex items-center gap-1 mt-0.5">
+              <div className="flex items-center gap-1 text-[11px] text-emerald-400 mt-0.5">
                 <TrendingUp className="w-3 h-3" />
-                <span>+{summary.newUsers7d || 0} user (7 ng�y)</span>
-              </p>
+                <span>+{summary.newUsersLast7Days || 0} user (7 ngày)</span>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Card 2: Premium */}
-        <Card className="bg-slate-900/80 border-slate-800 text-slate-100 shadow-md">
+        {/* Premium VIP Users */}
+        <Card className="bg-slate-900/80 border-slate-800 text-slate-100 hover:border-slate-700 transition-all">
           <CardContent className="p-4 space-y-2">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-medium">H?i Vi�n VIP</span>
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+              <span className="text-xs font-medium">Hội Viên VIP</span>
+              <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
                 <Crown className="w-4 h-4" />
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold text-amber-300 tracking-tight">{summary.premiumUsers || 0}</p>
+              <p className="text-2xl font-bold text-amber-400 tracking-tight">{summary.premiumUsers || 0}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                T? l?: <span className="text-indigo-400 font-semibold">{summary.premiumPercentage || 0}%</span>
+                Tỷ lệ: <span className="text-indigo-400 font-semibold">{summary.premiumPercentage || 0}%</span>
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Card 3: Revenue */}
-        <Card className="bg-slate-900/80 border-slate-800 text-slate-100 shadow-md">
+        {/* Revenue PayOS */}
+        <Card className="bg-slate-900/80 border-slate-800 text-slate-100 hover:border-slate-700 transition-all">
           <CardContent className="p-4 space-y-2">
             <div className="flex items-center justify-between text-slate-400">
               <span className="text-xs font-medium">Doanh Thu PayOS</span>
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
                 <CreditCard className="w-4 h-4" />
               </div>
             </div>
             <div>
               <p className="text-xl font-bold text-emerald-400 tracking-tight">
-                {(summary.totalRevenue || 0).toLocaleString('vi-VN')}?
+                {(summary.totalRevenue || 0).toLocaleString('vi-VN')} ₫
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {summary.paidPayments || 0} don th�nh c�ng
+                {summary.paidPayments || 0} đơn thành công
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Card 4: Study Hours */}
-        <Card className="bg-slate-900/80 border-slate-800 text-slate-100 shadow-md">
+        {/* Pomodoro Sessions */}
+        <Card className="bg-slate-900/80 border-slate-800 text-slate-100 hover:border-slate-700 transition-all">
           <CardContent className="p-4 space-y-2">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-medium">Gi? H?c Pomodoro</span>
-              <div className="w-8 h-8 rounded-lg bg-violet-500/10 text-violet-400 flex items-center justify-center">
+              <span className="text-xs font-medium">Giờ Học Pomodoro</span>
+              <div className="w-7 h-7 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center">
                 <Timer className="w-4 h-4" />
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold text-white tracking-tight">{summary.totalFocusHours || 0}h</p>
+              <p className="text-2xl font-bold text-purple-400 tracking-tight">{summary.totalHours || '0.0'}h</p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {summary.totalSessions || 0} bu?i h?c ho�n t?t
+                {summary.totalSessions || 0} buổi học hoàn tất
               </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Card 5: CoStudy Rooms */}
-        <Card className="bg-slate-900/80 border-slate-800 text-slate-100 shadow-md">
+        {/* Active Co-Study Rooms */}
+        <Card className="bg-slate-900/80 border-slate-800 text-slate-100 hover:border-slate-700 transition-all">
           <CardContent className="p-4 space-y-2">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-medium">Ph�ng Co-Study</span>
-              <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
+              <span className="text-xs font-medium">Phòng Co-Study</span>
+              <div className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-400 flex items-center justify-center">
                 <Video className="w-4 h-4" />
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold text-white tracking-tight">{summary.totalRooms || 0}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">Ph�ng dang tr?c tuy?n</p>
+              <p className="text-2xl font-bold text-rose-400 tracking-tight">{summary.totalRooms || 0}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Phòng đang trực tuyến</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Card 6: Mascots */}
-        <Card className="bg-slate-900/80 border-slate-800 text-slate-100 shadow-md">
+        {/* Active Mascots */}
+        <Card className="bg-slate-900/80 border-slate-800 text-slate-100 hover:border-slate-700 transition-all">
           <CardContent className="p-4 space-y-2">
             <div className="flex items-center justify-between text-slate-400">
-              <span className="text-xs font-medium">Linh V?t Mascot</span>
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center">
+              <span className="text-xs font-medium">Linh Vật Mascot</span>
+              <div className="w-7 h-7 rounded-lg bg-yellow-500/10 text-yellow-400 flex items-center justify-center">
                 <Sparkles className="w-4 h-4" />
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold text-white tracking-tight">{summary.mascotCount || 0}</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">�� n? v� n�ng c?p</p>
+              <p className="text-2xl font-bold text-yellow-400 tracking-tight">{summary.totalMascots || 0}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Đã nở và nâng cấp</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Visual Analytics Grid */}
+      {/* Two visual charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Growth Trend Chart (SVG visual bar) */}
-        <Card className="bg-slate-900/80 border-slate-800 text-slate-100 lg:col-span-2">
+        {/* Growth Trend Chart */}
+        <Card className="lg:col-span-2 bg-slate-900/80 border-slate-800 text-slate-100">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-base text-slate-100 flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-indigo-400" />
-                  <span>Tang Tru?ng Ngu?i D�ng M?i (14 ng�y g?n nh?t)</span>
+                  <span>Tăng Trưởng Người Dùng Mới (14 ngày gần nhất)</span>
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-400">
-                  S? lu?ng t�i kho?n dang k� theo t?ng ng�y
+                <CardDescription className="text-xs text-slate-400 mt-0.5">
+                  Số lượng tài khoản đăng ký theo từng ngày
                 </CardDescription>
               </div>
-              <Badge variant="outline" className="text-xs border-indigo-500/30 text-indigo-400 bg-indigo-500/10">
-                14 ng�y
-              </Badge>
+              <span className="text-[11px] font-mono bg-slate-800 text-slate-300 px-2.5 py-1 rounded-md border border-slate-700">
+                14 ngày
+              </span>
             </div>
           </CardHeader>
           <CardContent className="pt-4">
-            <div className="h-56 flex items-end gap-2 pt-6 pb-2 px-2 border-b border-slate-800">
-              {charts.growthTrend && charts.growthTrend.length > 0 ? (
-                charts.growthTrend.map((item: any, idx: number) => {
-                  const maxVal = Math.max(...charts.growthTrend.map((t: any) => t.users), 5);
-                  const heightPct = Math.max(8, Math.round((item.users / maxVal) * 100));
+            {charts.growthTrend && charts.growthTrend.length > 0 ? (
+              <div className="h-56 flex items-end gap-2 pt-6 pb-2 px-2">
+                {charts.growthTrend.map((item: any, idx: number) => {
+                  const maxCount = Math.max(...charts.growthTrend.map((i: any) => i.count), 1);
+                  const heightPct = Math.max(12, Math.round((item.count / maxCount) * 100));
                   return (
                     <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
-                      <span className="text-[10px] text-slate-400 font-mono opacity-0 group-hover:opacity-100 transition-opacity">
-                        {item.users}
+                      <span className="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity font-mono">
+                        {item.count}
                       </span>
                       <div
                         style={{ height: `${heightPct}%` }}
-                        className="w-full bg-gradient-to-t from-indigo-600 to-indigo-400 rounded-t-md hover:from-indigo-500 hover:to-indigo-300 transition-all cursor-pointer relative"
-                      >
-                        <div className="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-0.5 px-1.5 rounded shadow whitespace-nowrap z-20 border border-slate-700">
-                          {item.date}: {item.users} users
-                        </div>
-                      </div>
-                      <span className="text-[10px] text-slate-400 truncate max-w-[32px]">{item.date}</span>
+                        className="w-full rounded-t-md bg-gradient-to-t from-indigo-600 via-indigo-500 to-violet-400 group-hover:from-indigo-500 group-hover:to-violet-300 transition-all shadow-md shadow-indigo-600/20"
+                      />
+                      <span className="text-[9px] text-slate-400 truncate max-w-full font-mono mt-1">
+                        {item.date}
+                      </span>
                     </div>
                   );
-                })
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs text-slate-500">
-                  Chua c� d? li?u bi?u d?
-                </div>
-              )}
-            </div>
+                })}
+              </div>
+            ) : (
+              <div className="h-48 flex items-center justify-center text-slate-500 text-xs">
+                Chưa có dữ liệu biểu đồ
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Mascot Persona Distribution */}
+        {/* Mascot Distribution */}
         <Card className="bg-slate-900/80 border-slate-800 text-slate-100">
           <CardHeader className="pb-2">
             <CardTitle className="text-base text-slate-100 flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Ph�n B? Mascot H?c T?p</span>
+              <span>Phân Bố Mascot Học Tập</span>
             </CardTitle>
-            <CardDescription className="text-xs text-slate-400">
-              Linh v?t du?c h?c vi�n l?a ch?n
+            <CardDescription className="text-xs text-slate-400 mt-0.5">
+              Linh vật được học viên lựa chọn
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-2 space-y-3">
+          <CardContent className="pt-2">
             {charts.mascotDistribution && charts.mascotDistribution.length > 0 ? (
-              charts.mascotDistribution.map((m: any, idx: number) => {
-                const total = summary.mascotCount || 1;
-                const pct = Math.round((m.count / total) * 100);
-                const colors = [
-                  'bg-orange-500',
-                  'bg-indigo-500',
-                  'bg-emerald-500',
-                  'bg-pink-500',
-                  'bg-sky-500',
-                  'bg-amber-500',
-                ];
-                return (
-                  <div key={idx} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-300 font-medium">{m.name}</span>
-                      <span className="text-slate-400 font-mono">
-                        {m.count} ({pct}%)
-                      </span>
+              <div className="space-y-3 pt-2">
+                {charts.mascotDistribution.map((m: any, idx: number) => {
+                  const total = charts.mascotDistribution.reduce((acc: number, cur: any) => acc + cur.count, 0) || 1;
+                  const pct = Math.round((m.count / total) * 100);
+                  const colors = ['bg-amber-500', 'bg-blue-500', 'bg-emerald-500', 'bg-purple-500', 'bg-rose-500', 'bg-orange-500'];
+                  const color = colors[idx % colors.length];
+
+                  return (
+                    <div key={idx} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-300 font-medium truncate max-w-[170px]">{m.name}</span>
+                        <div className="flex items-center gap-2 font-mono text-[11px]">
+                          <span className="text-slate-200 font-semibold">{m.count}</span>
+                          <span className="text-slate-400">({pct}%)</span>
+                        </div>
+                      </div>
+                      <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          style={{ width: `${pct}%` }}
+                          className={`h-full ${color} rounded-full transition-all`}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                      <div
-                        style={{ width: `${pct}%` }}
-                        className={`h-full rounded-full ${colors[m.personaId % colors.length]}`}
-                      />
-                    </div>
-                  </div>
-                );
-              })
+                  );
+                })}
+              </div>
             ) : (
-              <p className="text-xs text-slate-500 text-center py-8">Chua c� mascot n�o</p>
+              <div className="h-48 flex items-center justify-center text-slate-500 text-xs">
+                Chưa có dữ liệu mascot
+              </div>
             )}
           </CardContent>
         </Card>
@@ -321,7 +317,7 @@ export default function AdminOverviewPage() {
       {/* Quick Action Hub */}
       <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-4">
         <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">
-          L?i T?t H�nh �?ng Qu?n Tr? Nhanh
+          LỐI TẮT HÀNH ĐỘNG QUẢN TRỊ NHANH
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Link
@@ -332,8 +328,8 @@ export default function AdminOverviewPage() {
               <Users className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-semibold">Qu?n l� User</p>
-              <p className="text-[11px] text-slate-400">Xem {summary.totalUsers} t�i kho?n</p>
+              <p className="text-xs font-semibold">Quản lý User</p>
+              <p className="text-[11px] text-slate-400">Xem {summary.totalUsers} tài khoản</p>
             </div>
           </Link>
 
@@ -345,8 +341,8 @@ export default function AdminOverviewPage() {
               <Bell className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-semibold">Ph�t Th�ng B�o</p>
-              <p className="text-[11px] text-slate-400">G?i tin to�n h? th?ng</p>
+              <p className="text-xs font-semibold">Phát Thông Báo</p>
+              <p className="text-[11px] text-slate-400">Gửi tin toàn hệ thống</p>
             </div>
           </Link>
 
@@ -358,8 +354,8 @@ export default function AdminOverviewPage() {
               <Video className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-semibold">Gi�m S�t Ph�ng</p>
-              <p className="text-[11px] text-slate-400">{summary.totalRooms} ph�ng m?</p>
+              <p className="text-xs font-semibold">Giám Sát Phòng</p>
+              <p className="text-[11px] text-slate-400">{summary.totalRooms} phòng mở</p>
             </div>
           </Link>
 
@@ -371,8 +367,8 @@ export default function AdminOverviewPage() {
               <CreditCard className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-semibold">Duy?t �on H�ng</p>
-              <p className="text-[11px] text-slate-400">{summary.pendingPayments || 0} don ch?</p>
+              <p className="text-xs font-semibold">Duyệt Đơn Hàng</p>
+              <p className="text-[11px] text-slate-400">{summary.pendingPayments || 0} đơn chờ</p>
             </div>
           </Link>
         </div>
@@ -384,16 +380,16 @@ export default function AdminOverviewPage() {
         <Card className="bg-slate-900/80 border-slate-800 text-slate-100">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-base text-slate-100">Ngu?i D�ng M?i Nh?t</CardTitle>
+              <CardTitle className="text-base text-slate-100">Người Dùng Mới Nhất</CardTitle>
               <CardDescription className="text-xs text-slate-400">
-                C�c h?c vi�n v?a gia nh?p FocusMate
+                Các học viên vừa gia nhập FocusMate
               </CardDescription>
             </div>
             <Link
               href="/admin/users"
               className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium"
             >
-              <span>Xem t?t c?</span>
+              <span>Xem tất cả</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </CardHeader>
@@ -410,33 +406,34 @@ export default function AdminOverviewPage() {
                       </Avatar>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-slate-200 truncate">{u.name}</p>
+                          <p className="text-xs font-semibold text-slate-200 truncate">{u.name}</p>
                           {u.isPremium && (
-                            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] px-1 py-0 h-4">
+                            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[9px] px-1 py-0">
                               VIP
                             </Badge>
                           )}
                           {u.role === 'admin' && (
-                            <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30 text-[10px] px-1 py-0 h-4">
-                              ADMIN
+                            <Badge className="bg-rose-500/20 text-rose-300 border-rose-500/30 text-[9px] px-1 py-0">
+                              Admin
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-slate-400 truncate">{u.email}</p>
+                        <p className="text-[11px] text-slate-400 truncate">{u.email}</p>
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-xs text-slate-400 font-mono">
+
+                    <div className="text-right">
+                      <p className="text-[11px] text-slate-400 font-mono">
                         {new Date(u.createdAt).toLocaleDateString('vi-VN')}
                       </p>
                       <p className="text-[11px] text-indigo-400">
-                        {u.mascot ? `Lv.${u.mascot.level || 1} � ${u.mascot.name}` : 'Chua ch?n mascot'}
+                        {u.mascot ? `Lv.${u.mascot.level || 1} • ${u.mascot.name}` : 'Chưa chọn mascot'}
                       </p>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-slate-500 text-center py-6">Chua c� ngu?i d�ng</p>
+                <p className="text-xs text-slate-500 text-center py-6">Chưa có người dùng</p>
               )}
             </div>
           </CardContent>
@@ -446,16 +443,16 @@ export default function AdminOverviewPage() {
         <Card className="bg-slate-900/80 border-slate-800 text-slate-100">
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-base text-slate-100">Giao D?ch G?n ��y</CardTitle>
+              <CardTitle className="text-base text-slate-100">Giao Dịch Gần Đây</CardTitle>
               <CardDescription className="text-xs text-slate-400">
-                Thanh to�n PayOS & N�ng c?p Premium
+                Thanh toán PayOS & Nâng cấp Premium
               </CardDescription>
             </div>
             <Link
               href="/admin/payments"
               className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium"
             >
-              <span>Xem t?t c?</span>
+              <span>Xem tất cả</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </CardHeader>
@@ -467,22 +464,22 @@ export default function AdminOverviewPage() {
                     <div className="min-w-0 space-y-0.5">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs font-semibold text-slate-300">#{p.orderCode}</span>
-                        <span className="text-xs text-slate-400">�</span>
+                        <span className="text-xs text-slate-400">•</span>
                         <span className="text-xs text-slate-300 truncate">
-                          {p.user?.name || 'Kh�ch h�ng'}
+                          {p.user?.name || 'Khách hàng'}
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-400">
-                        G�i {p.planId === 'yearly' ? 'Nam (12 th�ng)' : 'Th�ng'}
+                        Gói {p.planId === 'yearly' ? 'Năm (12 tháng)' : 'Tháng'}
                       </p>
                     </div>
 
-                    <div className="text-right shrink-0 space-y-1">
-                      <p className="text-xs font-bold text-white font-mono">
-                        {(p.amount || 0).toLocaleString('vi-VN')}?
+                    <div className="text-right space-y-1">
+                      <p className="font-mono font-bold text-xs text-emerald-400">
+                        {(p.amount || 0).toLocaleString('vi-VN')} ₫
                       </p>
                       <Badge
-                        className={`text-[10px] px-1.5 py-0 ${
+                        className={`text-[9px] px-1.5 py-0 ${
                           p.status === 'paid'
                             ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                             : p.status === 'pending'
@@ -490,13 +487,13 @@ export default function AdminOverviewPage() {
                             : 'bg-rose-500/20 text-rose-400 border-rose-500/30'
                         }`}
                       >
-                        {p.status === 'paid' ? '�� Thanh To�n' : p.status === 'pending' ? 'Ch? Duy?t' : '�� H?y'}
+                        {p.status === 'paid' ? 'Đã Thanh Toán' : p.status === 'pending' ? 'Chờ Duyệt' : 'Đã Hủy'}
                       </Badge>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-slate-500 text-center py-6">Chua c� giao d?ch</p>
+                <p className="text-xs text-slate-500 text-center py-6">Chưa có giao dịch</p>
               )}
             </div>
           </CardContent>
