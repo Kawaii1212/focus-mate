@@ -223,7 +223,7 @@ export default function AdminPaymentsPage() {
 
               <Button
                 type="submit"
-                className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs h-9 px-4 font-semibold"
+                className="bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-xs h-9 px-4 font-semibold"
               >
                 Lọc
               </Button>
@@ -252,7 +252,7 @@ export default function AdminPaymentsPage() {
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
                     <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
                       <span>Đang tải danh sách giao dịch...</span>
                     </div>
                   </td>
@@ -324,7 +324,7 @@ export default function AdminPaymentsPage() {
                             href={p.paymentLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800 transition-all"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-slate-800 transition-all"
                             title="Mở cổng thanh toán PayOS"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />

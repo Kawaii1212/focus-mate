@@ -54,7 +54,7 @@ export class AdminErrorBoundary extends Component<Props, State> {
                   this.setState({ hasError: false, error: undefined });
                   if (typeof window !== 'undefined') window.location.reload();
                 }}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs h-9 px-4 font-semibold flex items-center gap-2"
+                className="bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-xs h-9 px-4 font-semibold flex items-center gap-2"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 <span>Thử tải lại</span>

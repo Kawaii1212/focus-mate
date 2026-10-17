@@ -138,10 +138,10 @@ export default function AdminSessionsPage() {
           <CardContent className="p-4 flex items-center justify-between">
             <div>
               <p className="text-xs text-slate-400 font-medium">Tỷ Lệ Hoàn Thành Trung Bình</p>
-              <p className="text-2xl font-bold text-indigo-400 mt-1">{avgCompletion}%</p>
+              <p className="text-2xl font-bold text-sky-400 mt-1">{avgCompletion}%</p>
               <p className="text-[11px] text-slate-400 mt-0.5">Mức độ cam kết mục tiêu</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center">
               <Award className="w-5 h-5" />
             </div>
           </CardContent>
@@ -176,7 +176,7 @@ export default function AdminSessionsPage() {
 
               <Button
                 type="submit"
-                className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs h-9 px-4 font-semibold"
+                className="bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-xs h-9 px-4 font-semibold"
               >
                 Lọc
               </Button>
@@ -205,7 +205,7 @@ export default function AdminSessionsPage() {
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
                     <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
                       <span>Đang tải danh sách phiên học...</span>
                     </div>
                   </td>
@@ -223,7 +223,7 @@ export default function AdminSessionsPage() {
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
                         <Avatar className="w-7 h-7 bg-slate-800 border border-slate-700">
-                          <AvatarFallback className="bg-indigo-950 text-indigo-300 text-[10px] font-bold">
+                          <AvatarFallback className="bg-sky-950 text-sky-300 text-[10px] font-bold">
                             {s.user?.name?.charAt(0) || 'U'}
                           </AvatarFallback>
                         </Avatar>
@@ -254,7 +254,7 @@ export default function AdminSessionsPage() {
                               (s.completionPct || 0) >= 80
                                 ? 'bg-emerald-500'
                                 : (s.completionPct || 0) >= 50
-                                ? 'bg-indigo-500'
+                                ? 'bg-sky-500'
                                 : 'bg-amber-500'
                             }`}
                           />

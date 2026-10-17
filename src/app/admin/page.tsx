@@ -54,7 +54,7 @@ export default function AdminOverviewPage() {
   if (loading) {
     return (
       <div className="py-20 flex flex-col items-center justify-center text-slate-400">
-        <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3" />
+        <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin mb-3" />
         <p className="text-sm text-slate-400">Đang tổng hợp dữ liệu toàn hệ thống...</p>
       </div>
     );
@@ -72,12 +72,12 @@ export default function AdminOverviewPage() {
   return (
     <div className="space-y-8">
       {/* Header Welcome banner */}
-      <div className="relative overflow-hidden p-6 md:p-8 rounded-2xl bg-gradient-to-r from-indigo-950/80 via-slate-900/90 to-slate-900 border border-indigo-800/40 shadow-xl">
+      <div className="relative overflow-hidden p-6 md:p-8 rounded-2xl bg-gradient-to-r from-sky-950/70 via-slate-900/90 to-slate-900 border border-sky-500/25 shadow-xl">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <h2 className="text-2xl font-bold text-white tracking-tight">Chào mừng quay trở lại, Admin! 👋</h2>
-              <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30 text-[10px] uppercase">
+              <Badge className="bg-sky-500/20 text-sky-300 border-sky-500/30 text-[10px] uppercase">
                 Live Monitor
               </Badge>
             </div>
@@ -101,7 +101,7 @@ export default function AdminOverviewPage() {
             <Link href="/admin/users">
               <Button
                 size="sm"
-                className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs h-9 shadow-lg shadow-indigo-600/25 font-semibold flex items-center gap-1.5"
+                className="bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-xs h-9 shadow-lg shadow-sky-500/25 font-semibold flex items-center gap-1.5"
               >
                 <Users className="w-3.5 h-3.5" />
                 <span>Quản lý User</span>
@@ -144,7 +144,7 @@ export default function AdminOverviewPage() {
             <div>
               <p className="text-2xl font-bold text-amber-400 tracking-tight">{summary.premiumUsers || 0}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Tỷ lệ: <span className="text-indigo-400 font-semibold">{summary.premiumPercentage || 0}%</span>
+                Tỷ lệ: <span className="text-sky-400 font-semibold">{summary.premiumPercentage || 0}%</span>
               </p>
             </div>
           </CardContent>
@@ -229,7 +229,7 @@ export default function AdminOverviewPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-base text-slate-100 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-indigo-400" />
+                  <TrendingUp className="w-4 h-4 text-sky-400" />
                   <span>Tăng Trưởng Người Dùng Mới (14 ngày gần nhất)</span>
                 </CardTitle>
                 <CardDescription className="text-xs text-slate-400 mt-0.5">
@@ -254,7 +254,7 @@ export default function AdminOverviewPage() {
                       </span>
                       <div
                         style={{ height: `${heightPct}%` }}
-                        className="w-full rounded-t-md bg-gradient-to-t from-indigo-600 via-indigo-500 to-violet-400 group-hover:from-indigo-500 group-hover:to-violet-300 transition-all shadow-md shadow-indigo-600/20"
+                        className="w-full rounded-t-md bg-gradient-to-t from-sky-600 via-sky-500 to-cyan-400 group-hover:from-sky-400 group-hover:to-cyan-300 transition-all shadow-md shadow-sky-500/20"
                       />
                       <span className="text-[9px] text-slate-400 truncate max-w-full font-mono mt-1">
                         {item.date}
@@ -392,7 +392,7 @@ export default function AdminOverviewPage() {
             </div>
             <Link
               href="/admin/users"
-              className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium"
+              className="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1 font-medium"
             >
               <span>Xem tất cả</span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -405,7 +405,7 @@ export default function AdminOverviewPage() {
                   <div key={u.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-slate-800/40 transition-colors">
                     <div className="flex items-center gap-3 min-w-0">
                       <Avatar className="w-9 h-9 bg-slate-800 border border-slate-700">
-                        <AvatarFallback className="bg-indigo-950 text-indigo-300 text-xs font-bold">
+                        <AvatarFallback className="bg-sky-950 text-sky-300 text-xs font-bold">
                           {u.name?.charAt(0) || 'U'}
                         </AvatarFallback>
                       </Avatar>
@@ -431,7 +431,7 @@ export default function AdminOverviewPage() {
                       <p className="text-[11px] text-slate-400 font-mono">
                         {new Date(u.createdAt).toLocaleDateString('vi-VN')}
                       </p>
-                      <p className="text-[11px] text-indigo-400">
+                      <p className="text-[11px] text-sky-400">
                         {u.mascot ? `Lv.${u.mascot.level || 1} • ${u.mascot.name}` : 'Chưa chọn mascot'}
                       </p>
                     </div>
@@ -455,7 +455,7 @@ export default function AdminOverviewPage() {
             </div>
             <Link
               href="/admin/payments"
-              className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium"
+              className="text-xs text-sky-400 hover:text-sky-300 flex items-center gap-1 font-medium"
             >
               <span>Xem tất cả</span>
               <ChevronRight className="w-3.5 h-3.5" />

@@ -103,7 +103,7 @@ export default function AdminRoomsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-            <Video className="w-5 h-5 text-indigo-400" />
+            <Video className="w-5 h-5 text-sky-400" />
             <span>Giám Sát Phòng Học Nhóm (Co-Study Rooms)</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -176,7 +176,7 @@ export default function AdminRoomsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {loading ? (
           <div className="col-span-full py-16 text-center text-slate-400">
-            <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <div className="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
             <p className="text-xs">Đang tải danh sách phòng trực tuyến...</p>
           </div>
         ) : roomList.length === 0 ? (
@@ -228,7 +228,7 @@ export default function AdminRoomsPage() {
                   {/* Status Banner */}
                   <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 text-xs">
                     <div className="flex items-center gap-2">
-                      <Timer className="w-3.5 h-3.5 text-indigo-400" />
+                      <Timer className="w-3.5 h-3.5 text-sky-400" />
                       <span className="text-slate-300">
                         {room.pomodoroMode === 'break' ? '☕ Giờ giải lao' : '🔥 Tập trung'}
                       </span>
@@ -264,8 +264,8 @@ export default function AdminRoomsPage() {
                             key={m.id}
                             className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-800/80 border border-slate-700/60 text-[11px]"
                           >
-                            <Avatar className="w-4 h-4 bg-indigo-950">
-                              <AvatarFallback className="bg-indigo-600 text-[9px] text-white">
+                            <Avatar className="w-4 h-4 bg-sky-950">
+                              <AvatarFallback className="bg-sky-500 text-[9px] text-white">
                                 {m.name?.charAt(0) || 'U'}
                               </AvatarFallback>
                             </Avatar>

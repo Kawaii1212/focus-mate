@@ -184,7 +184,7 @@ export default function AdminNotificationsPage() {
               <Button
                 type="submit"
                 disabled={sending}
-                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl h-10 font-semibold shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2"
+                className="w-full bg-sky-500 hover:bg-sky-400 text-white rounded-xl h-10 font-semibold shadow-lg shadow-sky-500/25 flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
                 <span>{sending ? 'Đang gửi thông báo...' : 'Phát Thông Báo Ngay'}</span>
@@ -205,12 +205,12 @@ export default function AdminNotificationsPage() {
             <CardContent>
               <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 space-y-2">
                 <div className="flex items-start gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
                     <Bell className="w-4 h-4" />
                   </div>
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] text-indigo-400 uppercase font-semibold">
+                      <span className="text-[10px] text-sky-400 uppercase font-semibold">
                         {type}
                       </span>
                       <span className="text-[10px] text-slate-500">Vừa xong</span>

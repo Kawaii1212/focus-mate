@@ -68,7 +68,7 @@ export default function AdminSystemPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-            <Settings className="w-5 h-5 text-indigo-400" />
+            <Settings className="w-5 h-5 text-sky-400" />
             <span>Trạng Thái Hệ Thống & Cấu Hình Máy Chủ</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -198,7 +198,7 @@ export default function AdminSystemPage() {
           <Button
             onClick={handleSeedSessions}
             disabled={seeding}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs h-10 px-5 font-semibold shadow-lg shadow-indigo-600/20 flex items-center gap-2"
+            className="bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-xs h-10 px-5 font-semibold shadow-lg shadow-sky-500/20 flex items-center gap-2"
           >
             <Sparkles className={`w-4 h-4 ${seeding ? 'animate-spin' : ''}`} />
             <span>{seeding ? 'Đang tạo dữ liệu...' : 'Khởi Tạo 15 Phiên Học Mẫu Cho Sinh Viên'}</span>

@@ -60,13 +60,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   if (pathname === '/admin/login') {
-    return <div className="min-h-screen bg-slate-950 text-slate-100">{children}</div>;
+    return <div className="min-h-screen bg-[#0b1120] text-slate-100">{children}</div>;
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-200">
-        <div className="w-12 h-12 rounded-2xl border-4 border-indigo-500 border-t-transparent animate-spin mb-4" />
+      <div className="min-h-screen bg-[#0b1120] flex flex-col items-center justify-center text-slate-200">
+        <div className="w-12 h-12 rounded-2xl border-4 border-sky-500 border-t-transparent animate-spin mb-4" />
         <p className="text-sm font-medium tracking-wide">Đang xác thực quyền Admin...</p>
       </div>
     );
@@ -80,16 +80,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row antialiased selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-[#0b1120] text-slate-100 flex flex-col md:flex-row antialiased selection:bg-sky-500 selection:text-white">
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+          <div className="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center text-white shadow-lg shadow-sky-500/20">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
             <span className="font-bold text-white text-base">FocusMate</span>
-            <span className="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-400 font-semibold border border-indigo-500/30">ADMIN</span>
+            <span className="text-[10px] ml-1.5 px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400 font-semibold border border-sky-500/30">ADMIN</span>
           </div>
         </div>
         <button
@@ -109,14 +109,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Brand */}
         <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-sky-500/25">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-white text-base tracking-tight">FocusMate</span>
               </div>
-              <span className="text-[10px] tracking-wider uppercase font-semibold text-indigo-400 bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-800/50">
+              <span className="text-[10px] tracking-wider uppercase font-semibold text-sky-400 bg-sky-950/60 px-1.5 py-0.5 rounded border border-sky-800/50">
                 Admin Portal
               </span>
             </div>
@@ -147,7 +147,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 onClick={() => setMobileOpen(false)}
                 className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   active
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-600/25'
+                    ? 'bg-gradient-to-r from-sky-500 to-cyan-500 text-white shadow-lg shadow-sky-500/25'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                 }`}
               >
@@ -171,8 +171,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Admin Profile */}
           <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/40 border border-slate-700/40">
             <div className="flex items-center gap-2.5 min-w-0">
-              <Avatar className="w-8 h-8 rounded-lg bg-indigo-950 border border-indigo-700/50">
-                <AvatarFallback className="bg-indigo-600 text-white font-bold text-xs">
+              <Avatar className="w-8 h-8 rounded-lg bg-sky-950 border border-sky-700/50">
+                <AvatarFallback className="bg-sky-500 text-white font-bold text-xs">
                   {admin.name?.charAt(0) || 'A'}
                 </AvatarFallback>
               </Avatar>
@@ -193,7 +193,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Area */}
-      <main className="flex-1 flex flex-col min-w-0 min-h-screen bg-slate-950 overflow-x-hidden">
+      <main className="flex-1 flex flex-col min-w-0 min-h-screen bg-[#0b1120] overflow-x-hidden">
         {/* Top Header */}
         <header className="hidden md:flex items-center justify-between px-8 py-4 bg-slate-900/60 backdrop-blur border-b border-slate-800/80 sticky top-0 z-30">
           <div className="flex items-center gap-3">
@@ -215,7 +215,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <Link
               href="/dashboard"
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md shadow-indigo-600/20 flex items-center gap-1.5"
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-white transition-all shadow-md shadow-sky-500/20 flex items-center gap-1.5"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Xem App Học Viên</span>

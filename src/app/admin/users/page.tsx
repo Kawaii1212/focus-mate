@@ -256,7 +256,7 @@ export default function AdminUsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-            <Users className="w-5 h-5 text-indigo-400" />
+            <Users className="w-5 h-5 text-sky-400" />
             <span>Quản Lý Người Dùng FocusMate</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -266,7 +266,7 @@ export default function AdminUsersPage() {
 
         <Button
           onClick={() => setCreateOpen(true)}
-          className="bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs h-9 font-semibold flex items-center gap-1.5 shadow-lg shadow-indigo-600/20"
+          className="bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-xs h-9 font-semibold flex items-center gap-1.5 shadow-lg shadow-sky-500/20"
         >
           <Plus className="w-4 h-4" />
           <span>Thêm Người Dùng Mới</span>
@@ -283,7 +283,7 @@ export default function AdminUsersPage() {
                 placeholder="Tìm theo họ tên hoặc email..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-slate-950 border-slate-800 text-slate-100 focus-visible:ring-indigo-500 rounded-xl text-xs h-9"
+                className="pl-9 bg-slate-950 border-slate-800 text-slate-100 focus-visible:ring-sky-500 rounded-xl text-xs h-9"
               />
             </div>
 
@@ -342,7 +342,7 @@ export default function AdminUsersPage() {
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-slate-400">
                     <div className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
                       <span>Đang tải danh sách học viên...</span>
                     </div>
                   </td>
@@ -361,7 +361,7 @@ export default function AdminUsersPage() {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2.5">
                           <Avatar className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700">
-                            <AvatarFallback className="bg-indigo-950 text-indigo-300 font-bold text-xs">
+                            <AvatarFallback className="bg-sky-950 text-sky-300 font-bold text-xs">
                               {u.name?.charAt(0) || 'U'}
                             </AvatarFallback>
                           </Avatar>
@@ -374,8 +374,8 @@ export default function AdminUsersPage() {
 
                       <td className="py-3 px-4">
                         {u.role === 'admin' ? (
-                          <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30 text-[10px] font-semibold gap-1">
-                            <ShieldCheck className="w-3 h-3 text-indigo-400" />
+                          <Badge className="bg-sky-500/20 text-sky-300 border-sky-500/30 text-[10px] font-semibold gap-1">
+                            <ShieldCheck className="w-3 h-3 text-sky-400" />
                             Admin
                           </Badge>
                         ) : (
@@ -391,7 +391,7 @@ export default function AdminUsersPage() {
                             <div className="flex items-center gap-1.5 font-medium text-slate-200">
                               <Sparkles className="w-3 h-3 text-amber-400" />
                               <span className="truncate max-w-[100px]">{m.name}</span>
-                              <span className="text-[10px] text-indigo-400 font-mono">Lv.{m.level}</span>
+                              <span className="text-[10px] text-sky-400 font-mono">Lv.{m.level}</span>
                             </div>
                             <div className="flex items-center gap-2 text-[10px] text-slate-400">
                               <span className="flex items-center gap-0.5 text-amber-400">
@@ -451,7 +451,7 @@ export default function AdminUsersPage() {
                           <button
                             onClick={() => handleOpenEdit(u)}
                             title="Sửa quyền / Premium"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 transition-all"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-sky-300 hover:bg-indigo-500/10 transition-all"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -601,7 +601,7 @@ export default function AdminUsersPage() {
               </Button>
               <Button
                 type="submit"
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-xl"
+                className="bg-sky-500 hover:bg-sky-400 text-white text-xs rounded-xl"
               >
                 Tạo Tài Khoản
               </Button>
@@ -697,7 +697,7 @@ export default function AdminUsersPage() {
               <Button
                 type="button"
                 onClick={handleSaveEdit}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-xl"
+                className="bg-sky-500 hover:bg-sky-400 text-white text-xs rounded-xl"
               >
                 Lưu Thay Đổi
               </Button>
@@ -805,7 +805,7 @@ export default function AdminUsersPage() {
             <div className="space-y-4">
               <DialogHeader>
                 <div className="flex items-center gap-3">
-                  <Avatar className="w-10 h-10 rounded-xl bg-indigo-950 border border-indigo-700/50">
+                  <Avatar className="w-10 h-10 rounded-xl bg-sky-950 border border-indigo-700/50">
                     <AvatarFallback className="bg-indigo-600 text-white font-bold">
                       {detailUser.name?.charAt(0) || 'U'}
                     </AvatarFallback>
@@ -814,7 +814,7 @@ export default function AdminUsersPage() {
                     <DialogTitle className="text-base font-bold text-white flex items-center gap-2">
                       <span>{detailUser.name}</span>
                       {detailUser.role === 'admin' && (
-                        <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30 text-[10px]">
+                        <Badge className="bg-sky-500/20 text-sky-300 border-sky-500/30 text-[10px]">
                           Admin
                         </Badge>
                       )}

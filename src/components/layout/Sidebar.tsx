@@ -95,9 +95,9 @@ export default function Sidebar() {
         {state.user?.role === 'admin' && (
           <Link
             href="/admin"
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 transition-all w-full"
+            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 border border-sky-200 dark:border-sky-800 transition-all w-full"
           >
-            <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <ShieldCheck className="w-4 h-4 text-sky-600 dark:text-sky-400" />
             <span>Admin Portal</span>
           </Link>
         )}

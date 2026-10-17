@@ -31,7 +31,18 @@ export default function LoginPage() {
     try {
       const user = await authApi.login({ email: email.trim(), password });
       dispatch({ type: 'SET_USER', payload: user });
-      if (user.onboardingComplete) {
+      if (user.role === 'admin') {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('fm_admin_user', JSON.stringify({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: 'admin',
+            isPremium: user.isPremium,
+          }));
+        }
+        router.push('/admin');
+      } else if (user.onboardingComplete) {
         router.push('/dashboard');
       } else {
         router.push('/onboarding');
