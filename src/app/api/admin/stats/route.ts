@@ -37,6 +37,7 @@ export async function GET() {
         include: { mascot: true },
       }),
       prisma.payment.findMany({
+        where: { status: 'paid' },
         take: 8,
         orderBy: { createdAt: 'desc' },
         include: { user: { select: { name: true, email: true } } },
