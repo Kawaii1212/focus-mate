@@ -333,14 +333,13 @@ export default function AdminUsersPage() {
                 <th className="py-3 px-4">Linh Vật Mascot</th>
                 <th className="py-3 px-4">Gói Cước</th>
                 <th className="py-3 px-4">Thống Kê</th>
-                <th className="py-3 px-4">Ngày Tạo</th>
                 <th className="py-3 px-4 text-right">Thao Tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
                     <div className="flex items-center justify-center gap-2">
                       <div className="w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
                       <span>Đang tải danh sách học viên...</span>
@@ -349,7 +348,7 @@ export default function AdminUsersPage() {
                 </tr>
               ) : userList.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500">
+                  <td colSpan={6} className="py-12 text-center text-slate-500">
                     Không tìm thấy người dùng nào phù hợp với bộ lọc
                   </td>
                 </tr>
@@ -409,17 +408,10 @@ export default function AdminUsersPage() {
 
                       <td className="py-3 px-4">
                         {u.isPremium ? (
-                          <div className="space-y-0.5">
-                            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] font-semibold gap-1">
-                              <Crown className="w-3 h-3 text-amber-400" />
-                              VIP
-                            </Badge>
-                            {u.premiumExpiry && (
-                              <p className="text-[9px] text-slate-400 font-mono">
-                                Hết: {new Date(u.premiumExpiry).toLocaleDateString('vi-VN')}
-                              </p>
-                            )}
-                          </div>
+                          <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[10px] font-semibold gap-1">
+                            <Crown className="w-3 h-3 text-amber-400" />
+                            VIP
+                          </Badge>
                         ) : (
                           <Badge variant="outline" className="text-slate-500 border-slate-800 text-[10px]">
                             Free
@@ -432,10 +424,6 @@ export default function AdminUsersPage() {
                           <p>{u._count?.sessions || 0} phiên học</p>
                           <p>{u._count?.deadlines || 0} deadline</p>
                         </div>
-                      </td>
-
-                      <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">
-                        {new Date(u.createdAt).toLocaleDateString('vi-VN')}
                       </td>
 
                       <td className="py-3 px-4 text-right">
