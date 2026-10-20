@@ -1,13 +1,16 @@
 /**
- * Seed gói Premium tháng (49.000đ) đã thanh toán cho 24 user ở hàng 25-48
- * trong file D:\md_to_excel\Users_formatted.xlsx.
+ * Seed gói Premium đã thanh toán cho các user trong file
+ * D:\md_to_excel\Users_formatted.xlsx:
+ *   - Gói tháng 49.000đ (hàng 25-48)  → node prisma/seed-subscriptions.mjs
+ *   - Gói năm 399.000đ (hàng 49-51)   → node prisma/seed-subscriptions.mjs --plan yearly
  *
  * Mỗi user sẽ có:
- *  - 1 Payment: planId "monthly", amount 49000, status "paid", paidAt trong 14 ngày gần nhất
- *  - Tài khoản được bật isPremium + premiumExpiry (+30 ngày, cộng dồn nếu còn hạn)
+ *  - 1 Payment: status "paid", paidAt trong 14 ngày gần nhất (giờ ngẫu nhiên)
+ *  - Tài khoản được bật isPremium + premiumExpiry (cộng dồn nếu còn hạn)
  *
- * Chạy:  node prisma/seed-subscriptions.mjs
- *        node prisma/seed-subscriptions.mjs --force   (tạo thêm dù đã có gói tháng)
+ * Cờ khác:
+ *   --force   tạo thêm dù đã có gói tương ứng
+ *   --retime  chỉ đổi thời gian quyết toán của các đơn đã tạo
  */
 import { createRequire } from 'node:module';
 import { readFileSync, existsSync } from 'node:fs';
@@ -35,8 +38,8 @@ loadEnv();
 
 const { PrismaClient } = createRequire(import.meta.url)('@prisma/client');
 
-// Excel rows 25-48 (Users_formatted.xlsx)
-const TARGET_EMAILS = [
+// Excel rows 25-48 (Users_formatted.xlsx) — gói tháng 49k
+const MONTHLY_EMAILS = [
   'dqminh279@gmail.com',              // 25. Dương Quốc Minh
   'khai580vu@gmail.com',              // 26. Vũ Đình Khải
   'hungvo99@gmail.com',               // 27. Võ Thanh Hùng
@@ -63,7 +66,17 @@ const TARGET_EMAILS = [
   'hang.nguyen2000@gmail.com',        // 48. Nguyễn Thị Hằng
 ];
 
-const PLAN = { planId: 'monthly', amount: 49000, durationDays: 30 };
+// Excel rows 49-51 (Users_formatted.xlsx) — gói năm 399k
+const YEARLY_EMAILS = [
+  'hungdoan01@gmail.com',             // 49. Đoàn Hùng
+  'maido03@gmail.com',                // 50. Đỗ Văn Mai
+  'quynh.ngo2005@gmail.com',          // 51. Ngô Ngọc Quỳnh
+];
+
+const PLANS = {
+  monthly: { planId: 'monthly', amount: 49000, durationDays: 30 },
+  yearly: { planId: 'yearly', amount: 399000, durationDays: 365 },
+};
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 async function generateOrderCode(prisma) {
@@ -85,6 +98,13 @@ function randomPaidAt(daysBack = 14) {
 async function main() {
   const force = process.argv.includes('--force');
   const retime = process.argv.includes('--retime');
+  const planIndex = process.argv.indexOf('--plan');
+  const planKey = planIndex !== -1 ? process.argv[planIndex + 1] : 'monthly';
+  const PLAN = PLANS[planKey];
+  if (!PLAN) {
+    throw new Error(`Gói không hợp lệ: ${planKey} (chỉ hỗ trợ: ${Object.keys(PLANS).join(', ')})`);
+  }
+  const TARGET_EMAILS = planKey === 'yearly' ? YEARLY_EMAILS : MONTHLY_EMAILS;
   const prisma = new PrismaClient();
 
   try {
