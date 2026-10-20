@@ -16,7 +16,6 @@ export async function GET() {
       totalRooms,
       totalPayments,
       paidPayments,
-      pendingPayments,
       totalSessions,
       mascots,
       allUsers,
@@ -30,7 +29,6 @@ export async function GET() {
       prisma.activeRoom.count(),
       prisma.payment.count(),
       prisma.payment.findMany({ where: { status: 'paid' } }),
-      prisma.payment.count({ where: { status: 'pending' } }),
       prisma.studySession.count(),
       prisma.mascot.findMany({ select: { personaId: true, level: true, coin: true } }),
       prisma.user.findMany({
@@ -141,7 +139,6 @@ export async function GET() {
         totalRooms,
         totalPayments,
         paidPayments: paidPayments.length,
-        pendingPayments,
         totalRevenue: revenue,
         potentialRevenue,
         totalSessions,

@@ -372,8 +372,8 @@ export default function AdminOverviewPage() {
               <CreditCard className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-semibold">Duyệt Đơn Hàng</p>
-              <p className="text-[11px] text-slate-400">{summary.pendingPayments || 0} đơn chờ</p>
+              <p className="text-xs font-semibold">Giao Dịch & Thu</p>
+              <p className="text-[11px] text-slate-400">{summary.paidPayments || 0} đơn thành công</p>
             </div>
           </Link>
         </div>
@@ -492,7 +492,7 @@ export default function AdminOverviewPage() {
                             : 'bg-rose-500/20 text-rose-400 border-rose-500/30'
                         }`}
                       >
-                        {p.status === 'paid' ? 'Đã Thanh Toán' : p.status === 'pending' ? 'Chờ Duyệt' : 'Đã Hủy'}
+                        {p.status === 'paid' ? 'Đã Thanh Toán' : p.status === 'pending' ? 'Chưa Thanh Toán' : 'Đã Hủy'}
                       </Badge>
                     </div>
                   </div>

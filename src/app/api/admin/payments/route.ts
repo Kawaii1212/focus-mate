@@ -6,23 +6,28 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') || 'all';
     const planId = searchParams.get('planId') || 'all';
     const search = searchParams.get('search') || '';
 
-    const where: any = {};
-    if (status !== 'all') {
-      where.status = status;
-    }
+    // Trang admin chỉ hiển thị giao dịch đã thanh toán thành công.
+    // Trạng thái đơn do PayOS webhook (/api/payment/webhook) tự cập nhật,
+    // không cần admin duyệt thủ công.
+    const where: any = { status: 'paid' };
     if (planId !== 'all') {
       where.planId = planId;
     }
 
-    if (search.trim()) {
-      where.OR = [
-        { user: { name: { contains: search.trim(), mode: 'insensitive' } } },
-        { user: { email: { contains: search.trim(), mode: 'insensitive' } } },
+    const q = search.trim();
+    if (q) {
+      const orderCode = parseInt(q.replace('#', ''), 10);
+      const orFilters: any[] = [
+        { user: { name: { contains: q, mode: 'insensitive' } } },
+        { user: { email: { contains: q, mode: 'insensitive' } } },
       ];
+      if (Number.isFinite(orderCode)) {
+        orFilters.push({ orderCode });
+      }
+      where.OR = orFilters;
     }
 
     const payments = await prisma.payment.findMany({
@@ -40,19 +45,22 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' },
     });
 
-    const totalPaid = payments
-      .filter((p) => p.status === 'paid')
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const totalPaid = payments.reduce((acc, p) => acc + (p.amount || 0), 0);
+    const paidThisMonth = payments
+      .filter((p) => new Date(p.paidAt || p.createdAt) >= monthStart)
       .reduce((acc, p) => acc + (p.amount || 0), 0);
-    const totalPending = payments
-      .filter((p) => p.status === 'pending')
-      .reduce((acc, p) => acc + (p.amount || 0), 0);
+    const customers = new Set(payments.map((p) => p.userId)).size;
 
     return NextResponse.json({
       payments,
       summary: {
         totalOrders: payments.length,
         totalPaid,
-        totalPending,
+        paidThisMonth,
+        customers,
       },
     });
   } catch (error) {
