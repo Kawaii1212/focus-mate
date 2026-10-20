@@ -68,6 +68,7 @@ export default function AdminOverviewPage() {
   const mascotDistribution = Array.isArray(charts?.mascotDistribution) ? charts.mascotDistribution : [];
   const recentUsers = Array.isArray(recent?.users) ? recent.users : [];
   const recentPayments = Array.isArray(recent?.payments) ? recent.payments : [];
+  const maxGrowth = Math.max(...growthTrend.map((i: any) => i.users || 0), 1);
 
   return (
     <div className="space-y-8">
@@ -126,7 +127,7 @@ export default function AdminOverviewPage() {
               <p className="text-2xl font-bold text-white tracking-tight">{summary.totalUsers || 0}</p>
               <div className="flex items-center gap-1 text-[11px] text-emerald-400 mt-0.5">
                 <TrendingUp className="w-3 h-3" />
-                <span>+{summary.newUsersLast7Days || 0} user (7 ngày)</span>
+                <span>+{summary.newUsers7d || 0} user (7 ngày)</span>
               </div>
             </div>
           </CardContent>
@@ -180,7 +181,7 @@ export default function AdminOverviewPage() {
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold text-purple-400 tracking-tight">{summary.totalHours || '0.0'}h</p>
+              <p className="text-2xl font-bold text-purple-400 tracking-tight">{summary.totalFocusHours || '0.0'}h</p>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 {summary.totalSessions || 0} buổi học hoàn tất
               </p>
@@ -214,7 +215,7 @@ export default function AdminOverviewPage() {
               </div>
             </div>
             <div>
-              <p className="text-2xl font-bold text-yellow-400 tracking-tight">{summary.totalMascots || 0}</p>
+              <p className="text-2xl font-bold text-yellow-400 tracking-tight">{summary.mascotCount || 0}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">Đã nở và nâng cấp</p>
             </div>
           </CardContent>
@@ -245,12 +246,11 @@ export default function AdminOverviewPage() {
             {growthTrend.length > 0 ? (
               <div className="h-56 flex items-end gap-2 pt-6 pb-2 px-2">
                 {growthTrend.map((item: any, idx: number) => {
-                  const maxCount = Math.max(...growthTrend.map((i: any) => i.count), 1);
-                  const heightPct = Math.max(12, Math.round((item.count / maxCount) * 100));
+                  const heightPct = Math.max(12, Math.round(((item.users || 0) / maxGrowth) * 100));
                   return (
                     <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
                       <span className="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity font-mono">
-                        {item.count}
+                        {item.users || 0}
                       </span>
                       <div
                         style={{ height: `${heightPct}%` }}
