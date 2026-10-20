@@ -8,6 +8,7 @@
     "build": "npx prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
+    "seed:demo": "node prisma/seed.mjs",
     "pInstall": "pnpm install"
   },
   "dependencies": {
