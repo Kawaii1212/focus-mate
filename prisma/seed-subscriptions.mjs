@@ -75,8 +75,16 @@ async function generateOrderCode(prisma) {
   throw new Error('Không tạo được orderCode duy nhất');
 }
 
+// Giờ quyết toán ngẫu nhiên trong 14 ngày gần nhất, giờ 07:00 - 22:59
+function randomPaidAt(daysBack = 14) {
+  const d = new Date(Date.now() - randomInt(0, daysBack + 1) * DAY_MS);
+  d.setHours(randomInt(7, 23), randomInt(0, 60), randomInt(0, 60), 0);
+  return d;
+}
+
 async function main() {
   const force = process.argv.includes('--force');
+  const retime = process.argv.includes('--retime');
   const prisma = new PrismaClient();
 
   try {
@@ -89,6 +97,27 @@ async function main() {
     const missing = TARGET_EMAILS.filter((e) => !foundEmails.has(e.toLowerCase()));
     if (missing.length) {
       console.warn('⚠ Không tìm thấy user:', missing.join(', '));
+    }
+
+    // --retime: chỉ đổi thời điểm quyết toán của các đơn đã tạo
+    if (retime) {
+      const userIds = users.map((u) => u.id);
+      const payments = await prisma.payment.findMany({
+        where: { userId: { in: userIds }, status: 'paid' },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      for (const p of payments) {
+        const paidAt = randomPaidAt();
+        await prisma.payment.update({
+          where: { id: p.id },
+          data: { paidAt, createdAt: paidAt },
+        });
+        console.log(`  ✓ #${p.orderCode}: ${paidAt.toLocaleString('vi-VN')}`);
+      }
+
+      console.log(`\nĐã đổi thời gian quyết toán cho ${payments.length} giao dịch.`);
+      return;
     }
 
     let paymentsCreated = 0;
@@ -111,7 +140,7 @@ async function main() {
       }
 
       const orderCode = await generateOrderCode(prisma);
-      const paidAt = new Date(Date.now() - randomInt(0, 14) * DAY_MS);
+      const paidAt = randomPaidAt();
 
       // Cộng dồn thời hạn giống logic webhook PayOS
       const now = new Date();
