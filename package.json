@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "seed:demo": "node prisma/seed.mjs",
+    "seed:users": "node prisma/seed-users.mjs",
     "pInstall": "pnpm install"
   },
   "dependencies": {
